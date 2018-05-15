@@ -1,0 +1,9 @@
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "Alexa Smapi Sample",
+      "CONTAINERMODE": "alexa-smapi",
+      "ALEXA_SMAPI_SKILLID": "amzn1.ask.skill.28e718e6-c557-4cfa-bdb7-26935ea6451b"
+    }
+  }
+}

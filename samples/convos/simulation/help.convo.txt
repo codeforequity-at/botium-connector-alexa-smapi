@@ -1,0 +1,7 @@
+call for help
+
+#me
+ask space facts for help
+
+#bot
+You can say
