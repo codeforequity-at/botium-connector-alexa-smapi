@@ -20,7 +20,7 @@ export default {
     commonjs({
       exclude: 'node_modules/**'
     }),
-    buble(),
-    json()
+    json(),
+    buble()
   ]
 };

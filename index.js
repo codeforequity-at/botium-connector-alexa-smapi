@@ -1,4 +1,6 @@
 const util = require('util')
+const uuidv1 = require('uuid/v1')
+const _ = require('lodash')
 const askApi = require('ask-cli/lib/api/api-wrapper')
 const askConstants = require('ask-cli/lib/utils/constants')
 const askTools = require('ask-cli/lib/utils/tools')
@@ -23,6 +25,7 @@ class BotiumConnectorAlexaSmapi {
     this.api = this.caps['ALEXA_SMAPI_API'] || 'simulation'
     this.skillId = this.caps['ALEXA_SMAPI_SKILLID']
     this.locale = this.caps['ALEXA_SMAPI_LOCALE'] || 'en-US'
+    this.endpointRegion = this.caps['ALEXA_SMAPI_ENDPOINTREGION'] || 'default'
 
     if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
       this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
@@ -32,11 +35,19 @@ class BotiumConnectorAlexaSmapi {
     } else {
       this.profile = this.caps['ALEXA_SMAPI_AWSPROFILE'] || 'default'
     }
+
+    if (this.api === 'invocation') {
+      this.invocationRequestTemplate = require('./invocation-request-template.json')
+    }
     return Promise.resolve()
   }
 
   Start () {
     debug('Start called')
+
+    if (this.api === 'invocation') {
+      this._buildNewInvokeRequest()
+    }
     return Promise.resolve()
   }
 
@@ -81,6 +92,51 @@ class BotiumConnectorAlexaSmapi {
         })
       })
     }
+    if (this.api === 'invocation') {
+      return new Promise((resolve, reject) => {
+        const currentInvocationRequest = _.clone(this.invocationRequest)
+
+        if (msg.sourceData) {
+          _.merge(currentInvocationRequest.request, msg.sourceData)
+        } else {
+          const [ requestType, intentName ] = msg.messageText.split(' ')
+          currentInvocationRequest.request.type = requestType
+          if (intentName) {
+            currentInvocationRequest.request.intent.name = intentName
+          }
+        }
+        currentInvocationRequest.request.requestId = uuidv1()
+        currentInvocationRequest.request.timestamp = (new Date()).toISOString()
+        debug(`currentInvocationRequest: ${util.inspect(currentInvocationRequest)}`)
+
+        askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, (data) => {
+          const callResponse = askTools.convertDataToJsonObject(data.body)
+          debug(`callResponse: ${util.inspect(callResponse)}`)
+
+          if (callResponse.status !== 'SUCCESSFUL') {
+            reject(new Error(`Skill invocation returned status ${callResponse.status}`))
+          } else if (callResponse.result && callResponse.result.error) {
+            reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
+          }
+
+          if (callResponse.result && callResponse.result.skillExecutionInfo && callResponse.result.skillExecutionInfo.invocationResponse && callResponse.result.skillExecutionInfo.invocationResponse.body) {
+            const responseBody = callResponse.result.skillExecutionInfo.invocationResponse.body
+            if (responseBody.response.shouldEndSession) {
+              this._buildNewInvokeRequest()
+            } else {
+              this.invocationRequest.session['new'] = false
+              if (responseBody.sessionAttributes) {
+                Object.assign(this.invocationRequest.session.attributes, responseBody.sessionAttributes)
+              }
+            }
+            const messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
+            const botMsg = { sender: 'bot', sourceData: responseBody, messageText }
+            this.queueBotSays(botMsg)
+          }
+          resolve()
+        })
+      })
+    }
     return Promise.resolve()
   }
 
@@ -92,6 +148,15 @@ class BotiumConnectorAlexaSmapi {
   Clean () {
     debug('Clean called')
     return Promise.resolve()
+  }
+
+  _buildNewInvokeRequest () {
+    this.invocationRequest = _.clone(this.invocationRequestTemplate)
+    this.invocationRequest.session['new'] = true
+    this.invocationRequest.session.sessionId = uuidv1()
+    this.invocationRequest.session.application.applicationId = this.skillId
+    this.invocationRequest.context.System.application.applicationId = this.skillId
+    this.invocationRequest.request.locale = this.locale
   }
 }
 

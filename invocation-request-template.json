@@ -1,0 +1,43 @@
+{
+	"version": "1.0",
+	"session": {
+		"new": false,
+		"sessionId": "",
+		"application": {
+			"applicationId": ""
+		},
+		"attributes": {
+		},
+		"user": {
+			"userId": "botium-core-test-user"
+		}
+	},
+	"context": {
+		"AudioPlayer": {
+			"playerActivity": "IDLE"
+		},
+		"Display": {
+			"token": ""
+		},
+		"System": {
+			"application": {
+				"applicationId": ""
+			},
+			"user": {
+				"userId": "botium-core-test-user"
+			}
+		}
+	},
+	"request": {
+		"type": "",
+		"requestId": "",
+		"timestamp": "",
+		"locale": "",
+		"intent": {
+			"name": "",
+			"confirmationStatus": "NONE",
+			"slots": {
+			}
+		}
+	}
+}

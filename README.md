@@ -1,22 +1,39 @@
-# botium-connector-alexa-smapi
+# Botium Connector for Amazon Alexa Skills API
+
 Botium Connector for Amazon Alexa Skills API
 
 
 # Setup environment
 
-## Install ask-cli
+The Amazon Skill Developer Kit has to be installed and configured to retrieve the credentials for accessing the Skill. 
 
-## Initialize and retrieve AWS credentials
 
+## Install and Initialize ASK CLI
+
+Follow [Amazon's instructions](https://developer.amazon.com/de/docs/smapi/quick-start-alexa-skills-kit-command-line-interface.html) to install and initialize the AWS profile and the Amazon Skill Developer Kit. You have to provide your Amazon username/password in this step.
+
+## Retrieve AWS credentials
+
+The credentials are stored in the file ~/.ask/cli_config - you can either copy & paste the credentials out of this file and use Botium capabilities for configuration, or rely on Botium to read this file automatically. 
 
 # Capabilities
+
+This Botium connector can be used as any other Botium connector. It has to be installed in your Botium project first:
+
+	> npm install --save botium-connector-alexa-smapi
+
+## CONTAINERMODE: "alexa-smapi"
+
+Set the CONTAINERMODE capability to alexa-smapi
 
 ## ALEXA_SMAPI_API
 _default: "simulation"_
 
 Either "simulation" or "invocation" to use the respective [Skill Management API](https://developer.amazon.com/de/docs/smapi/skill-testing-operations.html)
-* __Skill Simulation API__ handles plain text input (including intent resolution)
-* __Skill Invocation API__ handles intent input
+* __Skill Simulation API__ handles plain text input (including intent resolution), but doesn't provide session tracking - only one-shot-conversations supported
+* __Skill Invocation API__ handles structured input (intents and slots, no intent resolution done) and is therefore harder to use than the Simulation API
+
+See the [samples](samples) directory for code and conversation samples.
 
 ## ALEXA_SMAPI_SKILLID
 
@@ -25,7 +42,7 @@ The Alexa Skill ID
 ## ALEXA_SMAPI_LOCALE
 _default: "en-US"_
 
-The locale used for the simulation (only required for Skill Simulation API) - list of valid locales see [here](https://developer.amazon.com/de/docs/smapi/skill-simulation-api.html#request-attributes-definition)
+The locale used for the simulation / invocation - list of valid locales see [here](https://developer.amazon.com/de/docs/smapi/skill-simulation-api.html#request-attributes-definition)
 
 ## AWS Credentials
 
@@ -42,11 +59,7 @@ _default: "default"_
 
 If using multiple aws/ask profiles, specify the one to use
 
+### ALEXA_SMAPI_ENDPOINTREGION
+_default: "default"_
 
-
- 
-
-
-
-
-
+The AWS Endpoint the Skill is linked to (only required for Skill Invocation API)

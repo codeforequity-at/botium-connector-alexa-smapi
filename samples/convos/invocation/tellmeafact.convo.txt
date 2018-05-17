@@ -1,0 +1,7 @@
+tell me a fact
+
+#me
+IntentRequest GetFact
+
+#bot
+Here's your fact

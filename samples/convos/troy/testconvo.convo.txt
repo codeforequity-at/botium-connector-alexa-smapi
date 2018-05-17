@@ -1,0 +1,25 @@
+test conversation with troy
+
+#me
+{ "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "wie kann ich kündigen" } } } }
+
+#bot
+Ich bedauere es sehr, dass Sie Ihren Vertrag bei Drei kündigen möchten. Was möchten Sie kündigen? Telefonie, Internet, Zusatzpaket?
+
+#me
+{ "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "Internet" } } } }
+
+#bot
+Ich bedauere es sehr, dass Sie Ihren Vertrag bei Drei kündigen möchten. Aus welchem Grund möchten Sie kündigen?
+
+#me
+{ "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "Netz" } } } }
+
+#bot
+Es tut uns leid, dass Sie mit unserem Netz nicht zufrieden sind.
+
+#me
+{ "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "Nein" } } } }
+
+#bot
+Wenn Sie Ihren Vertrag kündigen möchten, beachten Sie bitte die laut AGB gültige Kündigungsfrist und bei Handy-Tarifen Ihre Mindestvertragsdauer.

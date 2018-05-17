@@ -1,10 +1,10 @@
 const BotDriver = require('botium-core').BotDriver
 
 const driver = new BotDriver()
-  .setCapability('ALEXA_SMAPI_API', 'simulation')
+  .setCapability('ALEXA_SMAPI_API', 'invocation')
 
 driver.BuildFluent()
-  .ReadScripts('convos/simulation')
+  .ReadScripts('convos/invocation')
   .Start()
   .RunScripts()
   .Stop()

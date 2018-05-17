@@ -1,0 +1,7 @@
+call for help
+
+#me
+IntentRequest AMAZON.HelpIntent
+
+#bot
+You can say
