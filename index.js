@@ -38,6 +38,9 @@ class BotiumConnectorAlexaSmapi {
 
     if (this.api === 'invocation') {
       this.invocationRequestTemplate = require('./invocation-request-template.json')
+
+      this.invocationTextIntent = this.caps['ALEXA_SMAPI_INVOCATION_TEXT_INTENT']
+      this.invocationTextSlot = this.caps['ALEXA_SMAPI_INVOCATION_TEXT_SLOT']
     }
     return Promise.resolve()
   }
@@ -99,10 +102,16 @@ class BotiumConnectorAlexaSmapi {
         if (msg.sourceData) {
           _.merge(currentInvocationRequest.request, msg.sourceData)
         } else {
-          const [ requestType, intentName ] = msg.messageText.split(' ')
-          currentInvocationRequest.request.type = requestType
-          if (intentName) {
-            currentInvocationRequest.request.intent.name = intentName
+          if (this.invocationTextIntent && this.invocationTextSlot) {
+            currentInvocationRequest.request.type = 'IntentRequest'
+            currentInvocationRequest.request.intent.name = this.invocationTextIntent
+            currentInvocationRequest.request.intent.slots[this.invocationTextSlot] = { name: this.invocationTextSlot, value: msg.messageText }
+          } else {
+            const [ requestType, intentName ] = msg.messageText.split(' ')
+            currentInvocationRequest.request.type = requestType
+            if (intentName) {
+              currentInvocationRequest.request.intent.name = intentName
+            }
           }
         }
         currentInvocationRequest.request.requestId = uuidv1()

@@ -64,3 +64,6 @@ _default: "default"_
 
 The AWS Endpoint the Skill is linked to (only required for Skill Invocation API)
 
+## ALEXA_SMAPI_INVOCATION_TEXT_INTENT and ALEXA_SMAPI_INVOCATION_TEXT_SLOT
+
+When using the Invocation API, tell Botium to use a special intent and a special slot to hand over the input text (intent resolution is done by Skill itself)
