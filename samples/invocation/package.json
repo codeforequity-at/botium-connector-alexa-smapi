@@ -1,0 +1,19 @@
+{
+  "name": "invocation",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha spec --exit"
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "botium-bindings": "latest",
+    "botium-connector-alexa-smapi": "../../"
+  },
+  "botium": {
+    "convodirs": [
+      "spec\\convo"
+    ],
+    "expandConvos": true,
+    "expandUtterancesToConvos": false
+  }
+}

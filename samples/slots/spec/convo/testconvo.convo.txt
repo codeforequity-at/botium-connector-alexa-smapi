@@ -1,0 +1,7 @@
+test conversation with troy
+
+#me
+{ "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "wie kann ich kündigen" } } } }
+
+#bot
+Ich bedauere es sehr

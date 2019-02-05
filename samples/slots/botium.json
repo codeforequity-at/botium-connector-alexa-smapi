@@ -1,0 +1,13 @@
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "Alexa Smapi Sample",
+      "CONTAINERMODE": "alexa-smapi",
+      "ALEXA_SMAPI_API": "invocation",
+      "ALEXA_SMAPI_SKILLID": "amzn1.ask.skill.997174d9-57e9-4e3d-bdf2-a83b2430eb78",
+      "ALEXA_SMAPI_LOCALE": "de-DE",
+      "ALEXA_SMAPI_INVOCATION_TEXT_INTENT": "GetTroyResponseIntent",
+      "ALEXA_SMAPI_INVOCATION_TEXT_SLOT": "EveryThingSlot"
+    }
+  }
+}

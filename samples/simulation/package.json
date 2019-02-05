@@ -1,0 +1,19 @@
+{
+  "name": "simulation",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha spec --exit"
+  },
+  "botium": {
+    "convodirs": [
+      "spec\\convo"
+    ],
+    "expandConvos": true,
+    "expandUtterancesToConvos": false
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "botium-bindings": "latest",
+    "botium-connector-alexa-smapi": "../../"
+  }
+}
