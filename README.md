@@ -121,7 +121,7 @@ If using multiple aws/ask profiles, specify the one to use
 #### ALEXA_SMAPI_ENDPOINTREGION
 _default: "default"_
 
-The AWS Endpoint the Skill is linked to (only required for Skill Invocation API)
+The AWS Endpoint the Skill is linked to (only required for Skill Invocation API) - see [here](https://developer.amazon.com/de/docs/smapi/skill-invocation-api.html#request-attributes-definition)
 
 ### ALEXA_SMAPI_INVOCATION_TEXT_INTENT and ALEXA_SMAPI_INVOCATION_TEXT_SLOT
 
