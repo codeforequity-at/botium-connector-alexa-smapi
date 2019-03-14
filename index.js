@@ -6,6 +6,8 @@ const askConstants = require('ask-cli/lib/utils/constants')
 const askTools = require('ask-cli/lib/utils/tools')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
+const ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT = 10000
+
 class BotiumConnectorAlexaSmapi {
   constructor ({ queueBotSays, caps }) {
     this.queueBotSays = queueBotSays
@@ -56,9 +58,25 @@ class BotiumConnectorAlexaSmapi {
 
   UserSays (msg) {
     debug('UserSays called')
+
+    const timeoutMs = this.caps['ALEXA_SMAPI_CALL_TIMEOUT'] || ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT
+
+    const smapiCallbackTimeout = (fn, fnTimeout) => {
+      let timedout = false
+      const unsetTimeout = setTimeout(() => {
+        timedout = true
+        fnTimeout && fnTimeout()
+      }, timeoutMs)
+
+      return (...args) => {
+        unsetTimeout && unsetTimeout()
+        !timedout && fn(...args)
+      }
+    }
+
     if (this.api === 'simulation') {
       return new Promise((resolve, reject) => {
-        askApi.callSimulateSkill(null, msg.messageText, this.skillId, this.locale, this.profile, debug.enabled, (data) => {
+        askApi.callSimulateSkill(null, msg.messageText, this.skillId, this.locale, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
           const callResponse = askTools.convertDataToJsonObject(data.body)
           if (callResponse) {
             const simulationId = callResponse.id
@@ -92,7 +110,7 @@ class BotiumConnectorAlexaSmapi {
             }
             pollSimulationResult(data.body)
           }
-        })
+        }, () => reject(new Error(`No response from skill simulation api, most likely access token invalid.`))))
       })
     }
     if (this.api === 'invocation') {
@@ -118,7 +136,7 @@ class BotiumConnectorAlexaSmapi {
         currentInvocationRequest.request.timestamp = (new Date()).toISOString()
         debug(`currentInvocationRequest: ${util.inspect(currentInvocationRequest)}`)
 
-        askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, (data) => {
+        askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
           const callResponse = askTools.convertDataToJsonObject(data.body)
           debug(`callResponse: ${util.inspect(callResponse)}`)
 
@@ -143,7 +161,7 @@ class BotiumConnectorAlexaSmapi {
             this.queueBotSays(botMsg)
           }
           resolve()
-        })
+        }, () => reject(new Error(`No response from skill invocation api, most likely access token invalid.`))))
       })
     }
     return Promise.resolve()
