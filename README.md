@@ -113,6 +113,13 @@ _In a CI/CD environment, it typically makes more sense to not rely on the presen
 
 Copy on of these from the ~/.ask/cli_config file, typically it makes more sense to copy the refresh token (as the access token has a short expiry time).
 
+#### ALEXA_SMAPI_CALL_TIMEOUT
+_default: 10000_
+
+Given in milliseconds.
+
+Botium will bring an error if the SMAPI request doesn't return within a short period of time. In this case most likely the refresh token is invalid.
+
 #### ALEXA_SMAPI_AWSPROFILE
 _default: "default"_
 
