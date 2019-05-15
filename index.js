@@ -1,4 +1,3 @@
-const util = require('util')
 const uuidv1 = require('uuid/v1')
 const _ = require('lodash')
 const askApi = require('ask-cli/lib/api/api-wrapper')
@@ -69,7 +68,7 @@ class BotiumConnectorAlexaSmapi {
       }, timeoutMs)
 
       return (...args) => {
-        unsetTimeout && unsetTimeout()
+        unsetTimeout && clearTimeout(unsetTimeout)
         !timedout && fn(...args)
       }
     }
@@ -97,7 +96,7 @@ class BotiumConnectorAlexaSmapi {
                   resolve()
 
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
-                  debug(`got simulation result: ${util.inspect(simulationResult)}`)
+                  debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
                   const messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
                   const botMsg = { sender: 'bot', sourceData: simulationResult, messageText }
                   this.queueBotSays(botMsg)
@@ -134,11 +133,11 @@ class BotiumConnectorAlexaSmapi {
         }
         currentInvocationRequest.request.requestId = uuidv1()
         currentInvocationRequest.request.timestamp = (new Date()).toISOString()
-        debug(`currentInvocationRequest: ${util.inspect(currentInvocationRequest)}`)
+        debug(`currentInvocationRequest: ${JSON.stringify(currentInvocationRequest)}`)
 
         askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
           const callResponse = askTools.convertDataToJsonObject(data.body)
-          debug(`callResponse: ${util.inspect(callResponse)}`)
+          debug(`callResponse: ${JSON.stringify(callResponse)}`)
 
           if (callResponse.status !== 'SUCCESSFUL') {
             reject(new Error(`Skill invocation returned status ${callResponse.status}`))
