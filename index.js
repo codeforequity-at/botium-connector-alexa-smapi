@@ -84,6 +84,7 @@ class BotiumConnectorAlexaSmapi {
             const pollSimulationResult = (responseBody) => {
               const response = askTools.convertDataToJsonObject(responseBody)
               if (response) {
+                debug(`Simulation got response: ${JSON.stringify(response)}`)
                 if (!response.hasOwnProperty('status')) {
                   reject(new Error(`Unable to get skill simulation result for simulation id ${simulationId}`))
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.IN_PROGRESS) {
@@ -101,7 +102,11 @@ class BotiumConnectorAlexaSmapi {
                   const botMsg = { sender: 'bot', sourceData: simulationResult, messageText }
                   this.queueBotSays(botMsg)
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.FAILURE) {
-                  reject(new Error(`Skill simulation for simulation id ${simulationId} returned FAILURE`))
+                  if (response.result && response.result.error) {
+                    reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
+                  } else {
+                    reject(new Error(`Skill simulation for simulation id ${simulationId} returned FAILURE`))
+                  }
                 } else {
                   reject(new Error(`Invalid response for skill simulation ${simulationId}`))
                 }
