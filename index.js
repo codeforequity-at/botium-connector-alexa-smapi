@@ -5,6 +5,8 @@ const askConstants = require('ask-cli/lib/utils/constants')
 const askTools = require('ask-cli/lib/utils/tools')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
+const { importAlexaIntents } = require('./src/alexaintents')
+
 const ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT = 10000
 
 class BotiumConnectorAlexaSmapi {
@@ -193,5 +195,8 @@ class BotiumConnectorAlexaSmapi {
 
 module.exports = {
   PluginVersion: 1,
-  PluginClass: BotiumConnectorAlexaSmapi
+  PluginClass: BotiumConnectorAlexaSmapi,
+  Utils: {
+    importAlexaIntents
+  }
 }
