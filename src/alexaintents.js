@@ -47,7 +47,7 @@ const downloadSlotTypes = async (tableId) => {
   return slotTypes
 }
 
-const importAlexaIntents = async (outputDir, { expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
+const importAlexaIntents = async ({ expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
   const builtinSlotTypes = expandbuiltinslots ? await downloadSlotTypes(expandbuiltinslotsid) : {}
   debug(`Downloaded ${Object.keys(builtinSlotTypes).length} built-in slot types`)
 
@@ -81,11 +81,11 @@ const importAlexaIntents = async (outputDir, { expandcustomslots, expandbuiltins
   }
   debug(`Got Alexa InteractionModel with ${interactionModelJson.interactionModel.languageModel.intents.length} intents`)
 
+  const result = []
   for (const intentModel of interactionModelJson.interactionModel.languageModel.intents) {
     if (intentModel.name.startsWith('AMAZON.')) {
       debug(`Ignoring built-in intent ${intentModel.name}`)
     } else {
-      const utterance = intentModel.name
       let samples = intentModel.samples
 
       intentModel.slots && intentModel.slots.forEach(slot => {
@@ -158,10 +158,13 @@ const importAlexaIntents = async (outputDir, { expandcustomslots, expandbuiltins
         })
       }
 
-      console.log(`Writing ${samples.length} utterances for intent ${intentModel.name}`)
-      writeUtterances(utterance, samples, outputDir)
+      result.push({
+        name: intentModel.name,
+        samples
+      })
     }
   }
+  return result
 }
 
 const handler = (argv) => {
@@ -178,8 +181,15 @@ const handler = (argv) => {
     }, {})
   }
   debug(`command options: ${util.inspect(argv)}`)
+  const outputDir = (argv.convos && argv.convos[0]) || '.'
 
-  importAlexaIntents((argv.convos && argv.convos[0]) || '.', argv)
+  importAlexaIntents(argv)
+    .then((utterances) => {
+      for (const utterance of utterances) {
+        console.log(`Writing ${utterance.samples.length} utterances for intent ${utterance.name}`)
+        writeUtterances(utterance.name, utterance.samples, outputDir)
+      }
+    })
     .catch((err) => {
       console.log(`FAILED: ${err.message}`)
     })

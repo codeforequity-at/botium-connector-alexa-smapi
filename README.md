@@ -79,6 +79,26 @@ Open the file _botium.json_ in your working directory and add the Skill settings
 
 Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
 
+## Using the botium-connector-alexa-smapi-cli
+
+This connector provides a CLI interface for importing the Interaction Model from your skill and convert it to BotiumScript.
+
+* Intents and Utterances are converted to BotiumScript utterances files
+* Slots are filled with meaningful samples if possible
+** You can hand over the samples to use with the _--slotsamples_ switch
+** For default slot types, samples are loaded automatically from the [official documentation](https://developer.amazon.com/de/docs/custom-skills/slot-type-reference.html)
+** For custom slot types, the samples from the interaction model are used
+
+You can either run the CLI with botium-cli (it is integrated there), or directly from this connector (see samples/cli directory for some examples):
+
+    > botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json
+
+_Please note that a botium-core installation is required_
+
+For getting help on the available CLI options and switches, run:
+
+    > botium-connector-alexa-smapi-cli alexaimport --help
+
 ## Supported Capabilities
 
 ### CONTAINERMODE: "alexa-smapi"
