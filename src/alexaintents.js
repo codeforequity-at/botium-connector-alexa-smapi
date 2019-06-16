@@ -11,10 +11,10 @@ const askTools = require('ask-cli/lib/utils/tools')
 const botium = require('botium-core')
 const debug = require('debug')('botium-connector-alexa-smapi-intents')
 
-const getCaps = () => {
-  const caps = {}
-  caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
-  return caps
+const getCaps = (caps) => {
+  const result = caps || {}
+  result[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
+  return result
 }
 
 const writeUtterances = (utterance, samples, outputDir) => {
@@ -47,7 +47,7 @@ const downloadSlotTypes = async (tableId) => {
   return slotTypes
 }
 
-const importAlexaIntents = async ({ expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
+const importAlexaIntents = async ({ caps, expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
   const builtinSlotTypes = expandbuiltinslots ? await downloadSlotTypes(expandbuiltinslotsid) : {}
   debug(`Downloaded ${Object.keys(builtinSlotTypes).length} built-in slot types`)
 
@@ -57,7 +57,7 @@ const importAlexaIntents = async ({ expandcustomslots, expandbuiltinslots, expan
     debug(`Reading interaction model from file ${interactionmodel}`)
     interactionModelJson = JSON.parse(fs.readFileSync(interactionmodel))
   } else {
-    const driver = new botium.BotDriver(getCaps())
+    const driver = new botium.BotDriver(getCaps(caps))
     const container = await driver.Build()
 
     debug(`Loading interaction model from Alexa API`)
