@@ -160,7 +160,7 @@ const importAlexaIntents = async ({ expandcustomslots, expandbuiltinslots, expan
 
       result.push({
         name: intentModel.name,
-        samples
+        utterances: samples
       })
     }
   }
@@ -187,7 +187,7 @@ const handler = (argv) => {
     .then((utterances) => {
       for (const utterance of utterances) {
         console.log(`Writing ${utterance.samples.length} utterances for intent ${utterance.name}`)
-        writeUtterances(utterance.name, utterance.samples, outputDir)
+        writeUtterances(utterance.name, utterance.utterances, outputDir)
       }
     })
     .catch((err) => {
