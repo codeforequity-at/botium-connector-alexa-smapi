@@ -13,6 +13,16 @@ class BotiumConnectorAlexaSmapi {
     this.caps = caps
   }
 
+  Stop () {
+    debug('Stop called')
+    return Promise.resolve()
+  }
+
+  Clean () {
+    debug('Clean called')
+    return Promise.resolve()
+  }
+
   Validate () {
     debug('Validate called')
     if (this.caps['ALEXA_SMAPI_API'] && this.caps['ALEXA_SMAPI_API'] !== 'simulation' && this.caps['ALEXA_SMAPI_API'] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invoication"')
@@ -27,6 +37,9 @@ class BotiumConnectorAlexaSmapi {
     this.skillId = this.caps['ALEXA_SMAPI_SKILLID']
     this.locale = this.caps['ALEXA_SMAPI_LOCALE'] || 'en-US'
     this.endpointRegion = this.caps['ALEXA_SMAPI_ENDPOINTREGION'] || 'default'
+
+    this.audioCapability = this.caps['ALEXA_SMAPI_AUDIO_CAPABILITY'] === true
+    this.displayCapability = this.caps['ALEXA_SMAPI_DISPLAY_CAPABILITY'] === true
 
     if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
       this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
@@ -119,7 +132,7 @@ class BotiumConnectorAlexaSmapi {
     }
     if (this.api === 'invocation') {
       return new Promise((resolve, reject) => {
-        const currentInvocationRequest = _.clone(this.invocationRequest)
+        let currentInvocationRequest = _.clone(this.invocationRequest)
 
         if (msg.sourceData) {
           _.merge(currentInvocationRequest.request, msg.sourceData)
@@ -130,6 +143,12 @@ class BotiumConnectorAlexaSmapi {
             currentInvocationRequest.request.intent.slots[this.invocationTextSlot] = { name: this.invocationTextSlot, value: msg.messageText }
           } else {
             const [ requestType, intentName ] = msg.messageText.split(' ')
+
+            if (requestType === 'LaunchIntent') {
+              this._buildNewInvokeRequest()
+              currentInvocationRequest = _.clone(this.invocationRequest)
+            }
+
             currentInvocationRequest.request.type = requestType
             if (intentName) {
               currentInvocationRequest.request.intent.name = intentName
@@ -138,6 +157,14 @@ class BotiumConnectorAlexaSmapi {
         }
         currentInvocationRequest.request.requestId = uuidv1()
         currentInvocationRequest.request.timestamp = (new Date()).toISOString()
+
+        if (currentInvocationRequest.request.type.includes('AudioPlayer')) {
+          const audioPlayerRequest = currentInvocationRequest.request.type.split('.')[1]
+          this._handleAudioPlayerRequest(audioPlayerRequest, currentInvocationRequest)
+        } else {
+          delete currentInvocationRequest.request.token
+        }
+
         debug(`currentInvocationRequest: ${JSON.stringify(currentInvocationRequest)}`)
 
         askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
@@ -160,8 +187,31 @@ class BotiumConnectorAlexaSmapi {
                 Object.assign(this.invocationRequest.session.attributes, responseBody.sessionAttributes)
               }
             }
-            const messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
-            const botMsg = { sender: 'bot', sourceData: responseBody, messageText }
+
+            let messageText = 'no text response'
+            if (responseBody.response.outputSpeech) {
+              messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
+            }
+
+            let audioPlayerObject
+            let audioPlayerType
+            if (responseBody.response.directives) {
+              responseBody.response.directives.forEach(directive => {
+                if (directive.type.includes('AudioPlayer')) {
+                  audioPlayerObject = directive
+                  audioPlayerType = directive.type.split('.')[1].toUpperCase()
+                }
+              })
+            }
+
+            let media
+            if (audioPlayerObject && audioPlayerObject.audioItem) {
+              media = [{ mediaUri: audioPlayerObject.audioItem.stream.url }]
+            }
+
+            this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
+
+            const botMsg = { sender: 'bot', sourceData: responseBody, messageText, media }
             this.queueBotSays(botMsg)
           }
           resolve()
@@ -171,14 +221,51 @@ class BotiumConnectorAlexaSmapi {
     return Promise.resolve()
   }
 
-  Stop () {
-    debug('Stop called')
-    return Promise.resolve()
+  _handleAudioPlayerRequest (request, currentInvocationRequest) {
+    switch (request) {
+      case 'PlaybackNearlyFinished':
+        currentInvocationRequest.request.token = this.invocationRequest.context.AudioPlayer.token
+        break
+      default:
+        delete this.invocationRequest.request.token
+        break
+    }
   }
 
-  Clean () {
-    debug('Clean called')
-    return Promise.resolve()
+  _handleAudioPlayerEvent (event, audioPlayer) {
+    switch (event) {
+      case 'PLAY':
+        this.invocationRequest.context.AudioPlayer.playerActivity = 'PLAYING'
+        if (audioPlayer.audioItem.stream.token) {
+          this.invocationRequest.context.AudioPlayer.token = audioPlayer.audioItem.stream.token
+        }
+        break
+      case 'STOP':
+        break
+    }
+  }
+
+  _createNewUserId () {
+    const userId = `botium-test-user-${uuidv1()}`
+    this.invocationRequest.session.user.userId = userId
+    this.invocationRequest.context.System.user.userId = userId
+  }
+
+  _addSupportedInterfaces () {
+    if (this.displayCapability || this.audioCapability) {
+      const supportedInterfaces = {
+        AudioPlayer: (this.audioCapability ? {} : undefined),
+        Display: (!this.displayCapability ? undefined : {
+          templateVersion: '1.0',
+          markupVersion: '1.0'
+        })
+      }
+
+      this.invocationRequest.context.System.device = {
+        deviceId: uuidv1(),
+        supportedInterfaces
+      }
+    }
   }
 
   _buildNewInvokeRequest () {
@@ -188,6 +275,8 @@ class BotiumConnectorAlexaSmapi {
     this.invocationRequest.session.application.applicationId = this.skillId
     this.invocationRequest.context.System.application.applicationId = this.skillId
     this.invocationRequest.request.locale = this.locale
+    this._createNewUserId()
+    this._addSupportedInterfaces()
   }
 }
 
