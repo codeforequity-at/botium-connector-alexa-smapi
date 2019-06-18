@@ -194,6 +194,25 @@ class BotiumConnectorAlexaSmapi {
             }
             const messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
             const botMsg = { sender: 'bot', sourceData: responseBody, messageText }
+
+            if (responseBody.response.card) {
+              const card = responseBody.response.card
+              botMsg.cards = [
+                {
+                  text: card.title,
+                  content: card.text || card.content,
+                  media: card.image && [
+                    {
+                      mediaUri: card.image.smallImageUrl
+                    },
+                    {
+                      mediaUri: card.image.largeImageUrl
+                    }
+                  ]
+                }
+              ]
+            }
+
             this.queueBotSays(botMsg)
           }
           resolve()
