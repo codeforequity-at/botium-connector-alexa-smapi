@@ -2,7 +2,8 @@
   "name": "simulation",
   "version": "1.0.0",
   "scripts": {
-    "test": "mocha spec --exit"
+    "test": "mocha spec --exit",
+    "import": "botium-connector-alexa-smapi-cli alexaimport"
   },
   "botium": {
     "convodirs": [

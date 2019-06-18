@@ -5,6 +5,8 @@ const askConstants = require('ask-cli/lib/utils/constants')
 const askTools = require('ask-cli/lib/utils/tools')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
+const { importAlexaIntents } = require('./src/alexaintents')
+
 const ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT = 10000
 
 class BotiumConnectorAlexaSmapi {
@@ -99,10 +101,29 @@ class BotiumConnectorAlexaSmapi {
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.SUCCESS) {
                   resolve()
 
+                  const simulationRequest = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationRequest.body.request)
+                  debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
                   debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
                   const messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
                   const botMsg = { sender: 'bot', sourceData: simulationResult, messageText }
+
+                  if (simulationRequest.intent && simulationRequest.intent.name) {
+                    botMsg.nlp = {
+                      intent: {
+                        name: simulationRequest.intent.name
+                      },
+                      entities: simulationRequest.intent.slots ? Object.keys(simulationRequest.intent.slots).map((key) => {
+                        return { name: key, value: simulationRequest.intent.slots[key].value }
+                      }) : []
+                    }
+                  }
+                  if (simulationResult.card) {
+                    botMsg.cards = [
+                      this._extractCard(simulationResult.card)
+                    ]
+                  }
+
                   setTimeout(() => this.queueBotSays(botMsg), 0)
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.FAILURE) {
                   if (response.result && response.result.error) {
@@ -166,6 +187,13 @@ class BotiumConnectorAlexaSmapi {
             }
             const messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
             const botMsg = { sender: 'bot', sourceData: responseBody, messageText }
+
+            if (responseBody.response.card) {
+              const card = responseBody.response.card
+              botMsg.cards = [
+                this._extractCard(card)
+              ]
+            }
             setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         }, () => reject(new Error(`No response from skill invocation api, most likely access token invalid.`))))
@@ -192,9 +220,29 @@ class BotiumConnectorAlexaSmapi {
     this.invocationRequest.context.System.application.applicationId = this.skillId
     this.invocationRequest.request.locale = this.locale
   }
+
+  _extractCard (card) {
+    return {
+      text: card.title,
+      subtext: card.text,
+      content: card.content,
+      image: card.image && (card.image.smallImageUrl || card.image.largeImageUrl) ? { mediaUri: card.image.smallImageUrl || card.image.largeImageUrl } : null,
+      media: card.image && [
+        {
+          mediaUri: card.image.smallImageUrl
+        },
+        {
+          mediaUri: card.image.largeImageUrl
+        }
+      ]
+    }
+  }
 }
 
 module.exports = {
   PluginVersion: 1,
-  PluginClass: BotiumConnectorAlexaSmapi
+  PluginClass: BotiumConnectorAlexaSmapi,
+  Utils: {
+    importAlexaIntents
+  }
 }
