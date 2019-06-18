@@ -257,7 +257,7 @@ module.exports = {
     describe: 'Importing conversations for Botium',
     builder: (yargs) => {
       yargs.option('buildconvos', {
-        describe: 'Build convo files for intent assertions (otherwise, just write utterances files)',
+        describe: 'Build convo files for intent assertions (otherwise, just write utterances files) - use --no-buildconvos to disable',
         default: true
       })
       yargs.option('expandcustomslots', {
