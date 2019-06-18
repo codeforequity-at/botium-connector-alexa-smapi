@@ -117,22 +117,11 @@ class BotiumConnectorAlexaSmapi {
                   }
                   if (simulationResult.card) {
                     botMsg.cards = [
-                      {
-                        text: simulationResult.card.title,
-                        content: simulationResult.card.text || simulationResult.card.content,
-                        media: simulationResult.card.image && [
-                          {
-                            mediaUri: simulationResult.card.image.smallImageUrl
-                          },
-                          {
-                            mediaUri: simulationResult.card.image.largeImageUrl
-                          }
-                        ]
-                      }
+                      this._extractCard(simulationResult.card)
                     ]
                   }
 
-                  this.queueBotSays(botMsg)
+                  setTimeout(() => this.queueBotSays(botMsg), 0)
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.FAILURE) {
                   if (response.result && response.result.error) {
                     reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
@@ -198,22 +187,10 @@ class BotiumConnectorAlexaSmapi {
             if (responseBody.response.card) {
               const card = responseBody.response.card
               botMsg.cards = [
-                {
-                  text: card.title,
-                  content: card.text || card.content,
-                  media: card.image && [
-                    {
-                      mediaUri: card.image.smallImageUrl
-                    },
-                    {
-                      mediaUri: card.image.largeImageUrl
-                    }
-                  ]
-                }
+                this._extractCard(card)
               ]
             }
-
-            this.queueBotSays(botMsg)
+            setTimeout(() => this.queueBotSays(botMsg), 0)
           }
           resolve()
         }, () => reject(new Error(`No response from skill invocation api, most likely access token invalid.`))))
@@ -239,6 +216,23 @@ class BotiumConnectorAlexaSmapi {
     this.invocationRequest.session.application.applicationId = this.skillId
     this.invocationRequest.context.System.application.applicationId = this.skillId
     this.invocationRequest.request.locale = this.locale
+  }
+
+  _extractCard (card) {
+    return {
+      text: card.title,
+      subtext: card.text,
+      content: card.content,
+      image: card.image && (card.image.smallImageUrl || card.image.largeImageUrl) ? { mediaUri: card.image.smallImageUrl || card.image.largeImageUrl } : null,
+      media: card.image && [
+        {
+          mediaUri: card.image.smallImageUrl
+        },
+        {
+          mediaUri: card.image.largeImageUrl
+        }
+      ]
+    }
   }
 }
 
