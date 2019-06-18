@@ -17,6 +17,17 @@ const getCaps = (caps) => {
   return result
 }
 
+const writeConvo = (compiler, convo, outputDir) => {
+  const filename = path.resolve(outputDir, slug(convo.header.name) + '.convo.txt')
+
+  mkdirp.sync(outputDir)
+
+  const scriptData = compiler.Decompile([ convo ], 'SCRIPTING_FORMAT_TXT')
+
+  fs.writeFileSync(filename, scriptData)
+  return filename
+}
+
 const writeUtterances = (utterance, samples, outputDir) => {
   const filename = path.resolve(outputDir, slug(utterance) + '.utterances.txt')
 
@@ -47,19 +58,20 @@ const downloadSlotTypes = async (tableId) => {
   return slotTypes
 }
 
-const importAlexaIntents = async ({ caps, expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
+const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expandbuiltinslots, expandbuiltinslotsid, slotsamples, interactionmodel, invocation }) => {
   const builtinSlotTypes = expandbuiltinslots ? await downloadSlotTypes(expandbuiltinslotsid) : {}
   debug(`Downloaded ${Object.keys(builtinSlotTypes).length} built-in slot types`)
 
   let interactionModelJson = {}
 
+  const driver = new botium.BotDriver(getCaps(caps))
+  const container = await driver.Build()
+  const compiler = await driver.BuildCompiler()
+
   if (interactionmodel) {
     debug(`Reading interaction model from file ${interactionmodel}`)
     interactionModelJson = JSON.parse(fs.readFileSync(interactionmodel))
   } else {
-    const driver = new botium.BotDriver(getCaps(caps))
-    const container = await driver.Build()
-
     debug(`Loading interaction model from Alexa API`)
     interactionModelJson = await (new Promise((resolve, reject) => {
       askApi.callGetModel(
@@ -81,7 +93,9 @@ const importAlexaIntents = async ({ caps, expandcustomslots, expandbuiltinslots,
   }
   debug(`Got Alexa InteractionModel with ${interactionModelJson.interactionModel.languageModel.intents.length} intents`)
 
-  const result = []
+  const convos = []
+  const utterances = []
+
   for (const intentModel of interactionModelJson.interactionModel.languageModel.intents) {
     if (intentModel.name.startsWith('AMAZON.')) {
       debug(`Ignoring built-in intent ${intentModel.name}`)
@@ -104,7 +118,7 @@ const importAlexaIntents = async ({ caps, expandcustomslots, expandbuiltinslots,
         }
 
         const customSlotTypes = {}
-        if (expandcustomslots) {
+        if (expandcustomslots && interactionModelJson.interactionModel.languageModel.types) {
           for (const typeModel of interactionModelJson.interactionModel.languageModel.types) {
             const slotTypeSamples = typeModel.values.reduce((cum, v) => {
               cum.push(v.name.value)
@@ -158,13 +172,42 @@ const importAlexaIntents = async ({ caps, expandcustomslots, expandbuiltinslots,
         })
       }
 
-      result.push({
+      utterances.push({
         name: intentModel.name,
         utterances: samples
       })
+
+      if (buildconvos) {
+        convos.push({
+          header: {
+            name: intentModel.name
+          },
+          conversation: [
+            {
+              sender: 'me',
+              messageText: intentModel.name
+            },
+            {
+              sender: 'bot',
+              asserters: [
+                {
+                  name: 'INTENT',
+                  args: [intentModel.name]
+                }
+              ]
+            }
+          ]
+        })
+      }
     }
   }
-  return result
+
+  try {
+    await container.Clean()
+  } catch (err) {
+    debug(`Error container cleanup: ${util.inspect(err)}`)
+  }
+  return { convos, utterances, driver, container, compiler }
 }
 
 const handler = (argv) => {
@@ -184,10 +227,22 @@ const handler = (argv) => {
   const outputDir = (argv.convos && argv.convos[0]) || '.'
 
   importAlexaIntents(argv)
-    .then((utterances) => {
+    .then(({ convos, utterances, compiler }) => {
+      for (const convo of convos) {
+        try {
+          const filename = writeConvo(compiler, convo, outputDir)
+          console.log(`SUCCESS: wrote convo to file ${filename}`)
+        } catch (err) {
+          console.log(`WARNING: writing convo "${convo.header.name}" failed: ${util.inspect(err)}`)
+        }
+      }
       for (const utterance of utterances) {
-        console.log(`Writing ${utterance.samples.length} utterances for intent ${utterance.name}`)
-        writeUtterances(utterance.name, utterance.utterances, outputDir)
+        try {
+          const filename = writeUtterances(utterance.name, utterance.utterances, outputDir)
+          console.log(`SUCCESS: wrote utterances to file ${filename}`)
+        } catch (err) {
+          console.log(`WARNING: writing utterances "${utterance.name}" failed: ${util.inspect(err)}`)
+        }
       }
     })
     .catch((err) => {
@@ -201,6 +256,10 @@ module.exports = {
     command: 'alexaimport',
     describe: 'Importing conversations for Botium',
     builder: (yargs) => {
+      yargs.option('buildconvos', {
+        describe: 'Build convo files for intent assertions (otherwise, just write utterances files)',
+        default: true
+      })
       yargs.option('expandcustomslots', {
         describe: 'Expand slots with custom slot types in utterances',
         default: true

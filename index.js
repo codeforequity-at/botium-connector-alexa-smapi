@@ -98,10 +98,40 @@ class BotiumConnectorAlexaSmapi {
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.SUCCESS) {
                   resolve()
 
+                  const simulationRequest = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationRequest.body.request)
+                  debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
                   debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
                   const messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
                   const botMsg = { sender: 'bot', sourceData: simulationResult, messageText }
+
+                  if (simulationRequest.intent && simulationRequest.intent.name) {
+                    botMsg.nlp = {
+                      intent: {
+                        name: simulationRequest.intent.name
+                      },
+                      entities: simulationRequest.intent.slots ? Object.keys(simulationRequest.intent.slots).map((key) => {
+                        return { name: key, value: simulationRequest.intent.slots[key].value }
+                      }) : []
+                    }
+                  }
+                  if (simulationResult.card) {
+                    botMsg.cards = [
+                      {
+                        text: simulationResult.card.title,
+                        content: simulationResult.card.text || simulationResult.card.content,
+                        media: simulationResult.card.image && [
+                          {
+                            mediaUri: simulationResult.card.image.smallImageUrl
+                          },
+                          {
+                            mediaUri: simulationResult.card.image.largeImageUrl
+                          }
+                        ]
+                      }
+                    ]
+                  }
+
                   this.queueBotSays(botMsg)
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.FAILURE) {
                   if (response.result && response.result.error) {
