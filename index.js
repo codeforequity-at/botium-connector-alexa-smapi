@@ -38,6 +38,9 @@ class BotiumConnectorAlexaSmapi {
     } else {
       this.profile = this.caps['ALEXA_SMAPI_AWSPROFILE'] || 'default'
     }
+    if (this.api !== 'invocation' && this.api !== 'simulation') {
+      return Promise.reject(new Error(`ALEXA_SMAPI_API ${this.api} not supported, only simulation and invocation`))
+    }
 
     if (this.api === 'invocation') {
       this.invocationRequestTemplate = require('./invocation-request-template.json')
@@ -166,10 +169,11 @@ class BotiumConnectorAlexaSmapi {
           debug(`callResponse: ${JSON.stringify(callResponse)}`)
 
           if (callResponse.status !== 'SUCCESSFUL') {
-            reject(new Error(`Skill invocation returned status ${callResponse.status}`))
+            return reject(new Error(`Skill invocation returned status ${callResponse.status}`))
           } else if (callResponse.result && callResponse.result.error) {
-            reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
+            return reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
           }
+          resolve()
 
           if (callResponse.result && callResponse.result.skillExecutionInfo && callResponse.result.skillExecutionInfo.invocationResponse && callResponse.result.skillExecutionInfo.invocationResponse.body) {
             const responseBody = callResponse.result.skillExecutionInfo.invocationResponse.body
@@ -192,7 +196,6 @@ class BotiumConnectorAlexaSmapi {
             }
             setTimeout(() => this.queueBotSays(botMsg), 0)
           }
-          resolve()
         }, () => reject(new Error(`No response from skill invocation api, most likely access token invalid.`))))
       })
     }
