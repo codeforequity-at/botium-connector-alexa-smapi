@@ -239,8 +239,13 @@ class BotiumConnectorAlexaSmapi {
         if (audioPlayer.audioItem.stream.token) {
           this.invocationRequest.context.AudioPlayer.token = audioPlayer.audioItem.stream.token
         }
+        if (audioPlayer.audioItem.stream.offsetInMilliseconds) {
+          this.invocationRequest.context.AudioPlayer.offsetInMilliseconds = audioPlayer.audioItem.stream.offsetInMilliseconds
+        }
         break
       case 'STOP':
+        this.invocationRequest.context.AudioPlayer.playerActivity = 'STOPPED'
+        this.invocationRequest.context.AudioPlayer.offsetInMilliseconds = 0
         break
     }
   }
