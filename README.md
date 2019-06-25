@@ -144,3 +144,9 @@ _default: false_
 
 This will generate a new userId to send within each different conv.txt file. By default the userId is `botium-core-test-user` and when
 generated the user will be `botium-core-test-user-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` with a randomly generated UUID.
+
+### ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE
+_default: false_
+
+If your skill contains audio player responses this will track the changes to the audio player such as the `token` and the `playerActivity`
+and allow you to use intents such as `AudioPlayer.PlaybackNearlyFinished` and other `AudioPlayer` intents and get the state back on the response.
