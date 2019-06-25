@@ -123,17 +123,14 @@ class BotiumConnectorAlexaSmapi {
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
                   debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
 
-                  const responseBody = simulationResult
-
                   let messageText = 'no text response from skill'
-                  if (responseBody && responseBody.outputSpeech) {
-                    messageText = responseBody.outputSpeech.text || responseBody.outputSpeech.ssml
+                  if (simulationResult && simulationResult.outputSpeech) {
+                    messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
                   }
 
                   let media
-
-                  if (responseBody && responseBody.directives) {
-                    responseBody.directives.forEach(directive => {
+                  if (simulationResult && simulationResult.directives) {
+                    simulationResult.directives.forEach(directive => {
                       if (directive.type.includes('AudioPlayer')) {
                         const audioPlayerObject = directive
                         media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
@@ -242,7 +239,6 @@ class BotiumConnectorAlexaSmapi {
             }
 
             let media
-
             if (responseBody.response.directives) {
               responseBody.response.directives.forEach(directive => {
                 if (directive.type.includes('AudioPlayer')) {
@@ -296,7 +292,7 @@ class BotiumConnectorAlexaSmapi {
   }
 
   _createNewUserId () {
-    const userId = `botium-test-user-${uuidv1()}`
+    const userId = `botium-core-test-user-${uuidv1()}`
     this.invocationRequest.session.user.userId = userId
     this.invocationRequest.context.System.user.userId = userId
   }
