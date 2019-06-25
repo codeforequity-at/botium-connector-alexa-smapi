@@ -79,6 +79,26 @@ Open the file _botium.json_ in your working directory and add the Skill settings
 
 Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
 
+## Using the botium-connector-alexa-smapi-cli
+
+This connector provides a CLI interface for importing the Interaction Model from your skill and convert it to BotiumScript.
+
+* Intents and Utterances are converted to BotiumScript utterances files
+* Slots are filled with meaningful samples if possible
+** You can hand over the samples to use with the _--slotsamples_ switch
+** For default slot types, samples are loaded automatically from the [official documentation](https://developer.amazon.com/de/docs/custom-skills/slot-type-reference.html)
+** For custom slot types, the samples from the interaction model are used
+
+You can either run the CLI with botium-cli (it is integrated there), or directly from this connector (see samples/cli directory for some examples):
+
+    > botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json
+
+_Please note that a botium-core installation is required_
+
+For getting help on the available CLI options and switches, run:
+
+    > botium-connector-alexa-smapi-cli alexaimport --help
+
 ## Supported Capabilities
 
 ### CONTAINERMODE: "alexa-smapi"
@@ -140,12 +160,14 @@ _default: false_
 These will add Audio and Display capabilities when set to true to the invocation request sent to the Skill Management API.
 
 ### ALEXA_SMAPI_REFRESH_USER_ID
+#### This only works with the invocation API
 _default: false_
 
 This will generate a new userId to send within each different conv.txt file. By default the userId is `botium-core-test-user` and when
 generated the user will be `botium-core-test-user-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` with a randomly generated UUID.
 
 ### ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE
+#### This only works with the invocation API
 _default: false_
 
 If your skill contains audio player responses this will track the changes to the audio player such as the `token` and the `playerActivity`
