@@ -159,8 +159,7 @@ class BotiumConnectorAlexaSmapi {
         currentInvocationRequest.request.timestamp = (new Date()).toISOString()
 
         if (currentInvocationRequest.request.type.includes('AudioPlayer')) {
-          const audioPlayerRequest = currentInvocationRequest.request.type.split('.')[1]
-          this._handleAudioPlayerRequest(audioPlayerRequest, currentInvocationRequest)
+          currentInvocationRequest.request.token = this.invocationRequest.context.AudioPlayer.token
         } else {
           delete currentInvocationRequest.request.token
         }
@@ -193,23 +192,21 @@ class BotiumConnectorAlexaSmapi {
               messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
             }
 
-            let audioPlayerObject
-            let audioPlayerType
+            let media
+
             if (responseBody.response.directives) {
               responseBody.response.directives.forEach(directive => {
                 if (directive.type.includes('AudioPlayer')) {
-                  audioPlayerObject = directive
-                  audioPlayerType = directive.type.split('.')[1].toUpperCase()
+                  const audioPlayerObject = directive
+                  const audioPlayerType = directive.type.split('.')[1].toUpperCase()
+
+                  this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
+                  media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
+                    mediaUri: audioPlayerObject.audioItem.stream.url
+                  }] : undefined)
                 }
               })
             }
-
-            let media
-            if (audioPlayerObject && audioPlayerObject.audioItem) {
-              media = [{ mediaUri: audioPlayerObject.audioItem.stream.url }]
-            }
-
-            this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
 
             const botMsg = { sender: 'bot', sourceData: responseBody, messageText, media }
             this.queueBotSays(botMsg)
@@ -219,17 +216,6 @@ class BotiumConnectorAlexaSmapi {
       })
     }
     return Promise.resolve()
-  }
-
-  _handleAudioPlayerRequest (request, currentInvocationRequest) {
-    switch (request) {
-      case 'PlaybackNearlyFinished':
-        currentInvocationRequest.request.token = this.invocationRequest.context.AudioPlayer.token
-        break
-      default:
-        delete this.invocationRequest.request.token
-        break
-    }
   }
 
   _handleAudioPlayerEvent (event, audioPlayer) {
