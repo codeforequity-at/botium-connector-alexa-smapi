@@ -122,8 +122,28 @@ class BotiumConnectorAlexaSmapi {
                   debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
                   debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
-                  const messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
-                  const botMsg = { sender: 'bot', sourceData: simulationResult, messageText }
+
+                  const responseBody = simulationResult
+
+                  let messageText = 'no text response from skill'
+                  if (responseBody && responseBody.outputSpeech) {
+                    messageText = responseBody.outputSpeech.text || responseBody.outputSpeech.ssml
+                  }
+
+                  let media
+
+                  if (responseBody && responseBody.directives) {
+                    responseBody.directives.forEach(directive => {
+                      if (directive.type.includes('AudioPlayer')) {
+                        const audioPlayerObject = directive
+                        media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
+                          mediaUri: audioPlayerObject.audioItem.stream.url
+                        }] : undefined)
+                      }
+                    })
+                  }
+
+                  const botMsg = { sender: 'bot', sourceData: simulationResult, messageText, media }
 
                   if (simulationRequest.intent && simulationRequest.intent.name) {
                     botMsg.nlp = {
