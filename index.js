@@ -41,6 +41,8 @@ class BotiumConnectorAlexaSmapi {
     this.audioCapability = this.caps['ALEXA_SMAPI_AUDIO_CAPABILITY'] === true
     this.displayCapability = this.caps['ALEXA_SMAPI_DISPLAY_CAPABILITY'] === true
 
+    this.refreshUserId = this.caps['ALEXA_SMAPI_REFRESH_USER_ID'] === true
+
     if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
       this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
 
@@ -266,8 +268,11 @@ class BotiumConnectorAlexaSmapi {
     this.invocationRequest.session.application.applicationId = this.skillId
     this.invocationRequest.context.System.application.applicationId = this.skillId
     this.invocationRequest.request.locale = this.locale
-    this._createNewUserId()
     this._addSupportedInterfaces()
+
+    if (this.refreshUserId) {
+      this._createNewUserId()
+    }
   }
 }
 
