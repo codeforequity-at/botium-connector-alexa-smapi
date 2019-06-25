@@ -135,12 +135,12 @@ The AWS Endpoint the Skill is linked to (only required for Skill Invocation API)
 When using the Invocation API, tell Botium to use a special intent and a special slot to hand over the input text (intent resolution is done by Skill itself)
 
 ### ALEXA_SMAPI_AUDIO_CAPABILITY and ALEXA_SMAPI_DISPLAY_CAPABILITY
-_default: false
+_default: false_
 
 These will add Audio and Display capabilities when set to true to the invocation request sent to the Skill Management API.
 
 ### ALEXA_SMAPI_REFRESH_USER_ID
-_default: false
+_default: false_
 
 This will generate a new userId to send within each different conv.txt file. By default the userId is `botium-core-test-user` and when
 generated the user will be `botium-core-test-user-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` with a randomly generated UUID.
