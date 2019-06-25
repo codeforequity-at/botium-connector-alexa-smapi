@@ -43,6 +43,8 @@ class BotiumConnectorAlexaSmapi {
 
     this.refreshUserId = this.caps['ALEXA_SMAPI_REFRESH_USER_ID'] === true
 
+    this.keepAudioPlayerState = this.caps['ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE'] === true
+
     if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
       this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
 
@@ -189,7 +191,7 @@ class BotiumConnectorAlexaSmapi {
               }
             }
 
-            let messageText = 'no text response'
+            let messageText = 'no text response from skill'
             if (responseBody.response.outputSpeech) {
               messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
             }
@@ -202,7 +204,10 @@ class BotiumConnectorAlexaSmapi {
                   const audioPlayerObject = directive
                   const audioPlayerType = directive.type.split('.')[1].toUpperCase()
 
-                  this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
+                  if (this.keepAudioPlayerState) {
+                    this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
+                  }
+
                   media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
                     mediaUri: audioPlayerObject.audioItem.stream.url
                   }] : undefined)
@@ -221,6 +226,7 @@ class BotiumConnectorAlexaSmapi {
   }
 
   _handleAudioPlayerEvent (event, audioPlayer) {
+    debug(`handling audio player state for event ${event}. ${JSON.stringify(audioPlayer)}`)
     switch (event) {
       case 'PLAY':
         this.invocationRequest.context.AudioPlayer.playerActivity = 'PLAYING'
@@ -245,6 +251,7 @@ class BotiumConnectorAlexaSmapi {
   }
 
   _addSupportedInterfaces () {
+    debug(`adding capabilities, Display: ${this.displayCapability}, Audio: ${this.audioCapability}`)
     if (this.displayCapability || this.audioCapability) {
       const supportedInterfaces = {
         AudioPlayer: (this.audioCapability ? {} : undefined),
