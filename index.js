@@ -207,6 +207,7 @@ class BotiumConnectorAlexaSmapi {
           this._handleAudioPlayerRequest(currentInvocationRequest)
         } else {
           delete currentInvocationRequest.request.token
+          delete currentInvocationRequest.request.error
         }
 
         debug(`currentInvocationRequest: ${JSON.stringify(currentInvocationRequest)}`)
@@ -218,7 +219,6 @@ class BotiumConnectorAlexaSmapi {
           if (callResponse.status !== 'SUCCESSFUL') {
             return reject(new Error(`Skill invocation returned status ${callResponse.status}`))
           } else if (callResponse.result && callResponse.result.error) {
-            console.log(JSON.stringify(callResponse, null, 4))
             return reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
           }
           resolve()
@@ -274,13 +274,18 @@ class BotiumConnectorAlexaSmapi {
   }
 
   _handleAudioPlayerRequest (currentInvocationRequest) {
-    const audioPlayerIntent = currentInvocationRequest.request.type.split('.')[1]
-    currentInvocationRequest.request.token = this.invocationRequest.context.AudioPlayer.token
+    if (currentInvocationRequest.request.type.includes('AudioPlayer')) {
+      const audioPlayerIntent = currentInvocationRequest.request.type.split('.')[1]
+      currentInvocationRequest.request.token = this.invocationRequest.context.AudioPlayer.token
 
-    switch (audioPlayerIntent) {
-      case 'PlaybackFailed':
-        currentInvocationRequest.request.error = { message: 'Botium AudioPlayer.PlaybackFailed error message' }
-        break
+      switch (audioPlayerIntent) {
+        case 'PlaybackFailed':
+          currentInvocationRequest.request.error = { message: 'Botium AudioPlayer.PlaybackFailed error message' }
+          break
+      }
+    } else {
+      delete currentInvocationRequest.request.error
+      delete currentInvocationRequest.request.token
     }
   }
 
