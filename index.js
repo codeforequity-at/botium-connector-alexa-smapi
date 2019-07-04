@@ -40,12 +40,12 @@ class BotiumConnectorAlexaSmapi {
     this.locale = this.caps['ALEXA_SMAPI_LOCALE'] || 'en-US'
     this.endpointRegion = this.caps['ALEXA_SMAPI_ENDPOINTREGION'] || 'default'
 
-    this.audioCapability = this.caps['ALEXA_SMAPI_AUDIO_CAPABILITY'] === true
-    this.displayCapability = this.caps['ALEXA_SMAPI_DISPLAY_CAPABILITY'] === true
+    this.audioCapability = !!this.caps['ALEXA_SMAPI_AUDIO_CAPABILITY']
+    this.displayCapability = !!this.caps['ALEXA_SMAPI_DISPLAY_CAPABILITY']
 
-    this.refreshUserId = this.caps['ALEXA_SMAPI_REFRESH_USER_ID'] === true
+    this.refreshUserId = !!this.caps['ALEXA_SMAPI_REFRESH_USER_ID']
 
-    this.keepAudioPlayerState = this.caps['ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE'] === true
+    this.keepAudioPlayerState = !!this.caps['ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE']
 
     if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
       this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
@@ -123,7 +123,7 @@ class BotiumConnectorAlexaSmapi {
                   const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
                   debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
 
-                  let messageText = 'no text response from skill'
+                  let messageText
                   if (simulationResult && simulationResult.outputSpeech) {
                     messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
                   }
