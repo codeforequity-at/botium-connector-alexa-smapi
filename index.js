@@ -107,7 +107,7 @@ class BotiumConnectorAlexaSmapi {
               const response = askTools.convertDataToJsonObject(responseBody)
               if (response) {
                 debug(`Simulation got response: ${JSON.stringify(response)}`)
-                if (!response.hasOwnProperty('status')) {
+                if (!Object.prototype.hasOwnProperty.call(response, 'status')) {
                   reject(new Error(`Unable to get skill simulation result for simulation id ${simulationId}`))
                 } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.IN_PROGRESS) {
                   setTimeout(() => {
@@ -187,7 +187,7 @@ class BotiumConnectorAlexaSmapi {
             currentInvocationRequest.request.intent.name = this.invocationTextIntent
             currentInvocationRequest.request.intent.slots[this.invocationTextSlot] = { name: this.invocationTextSlot, value: msg.messageText }
           } else {
-            const [ requestType, intentName ] = msg.messageText.split(' ')
+            const [requestType, intentName] = msg.messageText.split(' ')
 
             if (requestType === 'LaunchIntent') {
               this._buildNewInvokeRequest()
