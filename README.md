@@ -136,13 +136,6 @@ From your Amazon Security Profile
 ### ALEXA_SMAPI_VENDORID
 Amazon vendor id
 
-### ALEXA_SMAPI_CALL_TIMEOUT
-_default: 10000_
-
-Given in milliseconds.
-
-Botium will bring an error if the SMAPI request doesn't return within a short period of time. In this case most likely the refresh token is invalid.
-
 ### ALEXA_SMAPI_ENDPOINTREGION
 _default: "default"_
 
@@ -151,6 +144,11 @@ The AWS Endpoint the Skill is linked to (only required for Skill Invocation API)
 ### ALEXA_SMAPI_INVOCATION_TEXT_INTENT and ALEXA_SMAPI_INVOCATION_TEXT_SLOT
 
 When using the Invocation API, tell Botium to use a special intent and a special slot to hand over the input text (intent resolution is done by Skill itself)
+
+### ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE
+_default: the file invocation-request-template.json in this repository_
+
+When using the Invocation API, tell Botium to use a special template for the invocation request (JSON formatted).
 
 ### ALEXA_SMAPI_AUDIO_CAPABILITY and ALEXA_SMAPI_DISPLAY_CAPABILITY
 _default: false_

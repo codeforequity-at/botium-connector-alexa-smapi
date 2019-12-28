@@ -4,4 +4,4 @@ test conversation with troy
 { "type": "IntentRequest", "intent": { "name": "GetTroyResponseIntent", "slots": { "EveryThingSlot": { "name": "EveryThingSlot", "value": "wie kann ich kündigen" } } } }
 
 #bot
-Ich bedauere es sehr
+Möchten Sie ein Mobilfunk- oder ein Festnetz-Produkt kündigen?

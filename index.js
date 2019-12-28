@@ -1,14 +1,10 @@
 const uuidv1 = require('uuid/v1')
 const _ = require('lodash')
-// const askApi = require('ask-cli/lib/api/api-wrapper')
-// const askConstants = require('ask-cli/lib/utils/constants')
-// const askTools = require('ask-cli/lib/utils/tools')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
-const { Defaults, Capabilities } = require('./src/constants')
+const { Capabilities, Defaults, SIMULATION_STATUS } = require('./src/constants')
 const { importAlexaIntents } = require('./src/alexaintents')
-
-const ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT = 10000
+const SmapiClient = require('./src/SmapiClient')
 
 class BotiumConnectorAlexaSmapi {
   constructor ({ queueBotSays, caps }) {
@@ -30,148 +26,152 @@ class BotiumConnectorAlexaSmapi {
     debug('Validate called')
     this.caps = Object.assign({}, Defaults, this.caps)
 
-    if (this.caps['ALEXA_SMAPI_API'] && this.caps['ALEXA_SMAPI_API'] !== 'simulation' && this.caps['ALEXA_SMAPI_API'] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invoication"')
-    if (!this.caps['ALEXA_SMAPI_SKILLID']) throw new Error('ALEXA_SMAPI_SKILLID capability required')
+    if (this.caps[Capabilities.ALEXA_SMAPI_API] !== 'simulation' && this.caps[Capabilities.ALEXA_SMAPI_API] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invoication"')
+    if (!this.caps[Capabilities.ALEXA_SMAPI_SKILLID]) throw new Error('ALEXA_SMAPI_SKILLID capability required')
 
     return Promise.resolve()
   }
 
-  Build () {
+  async Build () {
     debug('Build called')
-    this.api = this.caps['ALEXA_SMAPI_API'] || 'simulation'
-    this.skillId = this.caps['ALEXA_SMAPI_SKILLID']
-    this.locale = this.caps['ALEXA_SMAPI_LOCALE'] || 'en-US'
-    this.endpointRegion = this.caps['ALEXA_SMAPI_ENDPOINTREGION'] || 'default'
+    this.api = this.caps[Capabilities.ALEXA_SMAPI_API]
+    this.skillId = this.caps[Capabilities.ALEXA_SMAPI_SKILLID]
+    this.locale = this.caps[Capabilities.ALEXA_SMAPI_LOCALE]
+    this.endpointRegion = this.caps[Capabilities.ALEXA_SMAPI_ENDPOINTREGION]
 
-    this.audioCapability = !!this.caps['ALEXA_SMAPI_AUDIO_CAPABILITY']
-    this.displayCapability = !!this.caps['ALEXA_SMAPI_DISPLAY_CAPABILITY']
+    this.audioCapability = !!this.caps[Capabilities.ALEXA_SMAPI_AUDIO_CAPABILITY]
+    this.displayCapability = !!this.caps[Capabilities.ALEXA_SMAPI_DISPLAY_CAPABILITY]
 
-    this.refreshUserId = !!this.caps['ALEXA_SMAPI_REFRESH_USER_ID']
+    this.refreshUserId = !!this.caps[Capabilities.ALEXA_SMAPI_REFRESH_USER_ID]
 
-    this.keepAudioPlayerState = !!this.caps['ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE']
+    this.keepAudioPlayerState = !!this.caps[Capabilities.ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE]
 
     if (this.api !== 'invocation' && this.api !== 'simulation') {
       return Promise.reject(new Error(`ALEXA_SMAPI_API ${this.api} not supported, only simulation and invocation`))
     }
 
     if (this.api === 'invocation') {
-      this.invocationRequestTemplate = require('./invocation-request-template.json')
+      if (this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE]) {
+        if (_.isString(this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE])) {
+          try {
+            this.invocationRequestTemplate = JSON.parse(this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE])
+          } catch (err) {
+            throw new Error(`Failed to parse ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE: ${err.message}`)
+          }
+        } else {
+          this.invocationRequestTemplate = this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE]
+        }
+      } else {
+        this.invocationRequestTemplate = require('./invocation-request-template.json')
+      }
 
-      this.invocationTextIntent = this.caps['ALEXA_SMAPI_INVOCATION_TEXT_INTENT']
-      this.invocationTextSlot = this.caps['ALEXA_SMAPI_INVOCATION_TEXT_SLOT']
+      this.invocationTextIntent = this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_TEXT_INTENT]
+      this.invocationTextSlot = this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_TEXT_SLOT]
     }
-    return Promise.resolve()
+
+    this.smapiClient = new SmapiClient(this.caps)
+    await this.smapiClient.refresh()
   }
 
   Start () {
     debug('Start called')
-
+    if (this.api === 'simulation') {
+      this.forceNewSession = true
+    }
     if (this.api === 'invocation') {
       this._buildNewInvokeRequest()
     }
     return Promise.resolve()
   }
 
-  UserSays (msg) {
+  async UserSays (msg) {
     debug('UserSays called')
 
-    const timeoutMs = this.caps['ALEXA_SMAPI_CALL_TIMEOUT'] || ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT
-
-    const smapiCallbackTimeout = (fn, fnTimeout) => {
-      let timedout = false
-      const unsetTimeout = setTimeout(() => {
-        timedout = true
-        fnTimeout && fnTimeout()
-      }, timeoutMs)
-
-      return (...args) => {
-        unsetTimeout && clearTimeout(unsetTimeout)
-        !timedout && fn(...args)
-      }
-    }
-
     if (this.api === 'simulation') {
-      return new Promise((resolve, reject) => {
-        askApi.callSimulateSkill(null, msg.messageText, this.skillId, this.locale, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
-          const callResponse = askTools.convertDataToJsonObject(data.body)
-          if (callResponse) {
-            const simulationId = callResponse.id
-            debug(`Simulation created for simulation id ${simulationId}, polling for response ...`)
+      this.forceNewSession = false
 
-            const pollSimulationResult = (responseBody) => {
-              const response = askTools.convertDataToJsonObject(responseBody)
-              if (response) {
-                debug(`Simulation got response: ${JSON.stringify(response)}`)
-                if (!Object.prototype.hasOwnProperty.call(response, 'status')) {
-                  reject(new Error(`Unable to get skill simulation result for simulation id ${simulationId}`))
-                } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.IN_PROGRESS) {
-                  setTimeout(() => {
-                    askApi.callGetSimulation(simulationId, this.skillId, this.profile, debug.enabled, (data) => {
-                      pollSimulationResult(data.body)
-                    })
-                  }, 2000)
-                } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.SUCCESS) {
-                  resolve()
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise(async (resolve, reject) => {
+        let callResponse = null
+        try {
+          callResponse = await this.smapiClient.simulate(this.skillId, 'development', this.locale, msg.messageText, this.forceNewSession)
+        } catch (err) {
+          return reject(new Error(`Calling simulation API failed: ${err.message}`))
+        }
+        const simulationId = callResponse.id
+        debug(`Simulation created for simulation id ${simulationId}, polling for response ...`)
 
-                  const simulationRequest = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationRequest.body.request)
-                  debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
-                  const simulationResult = askTools.convertDataToJsonObject(response.result.skillExecutionInfo.invocationResponse.body.response)
-                  debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
+        const pollSimulationResult = (response) => {
+          if (response) {
+            debug(`Simulation got response: ${JSON.stringify(response)}`)
+            if (!Object.prototype.hasOwnProperty.call(response, 'status')) {
+              reject(new Error(`Unable to get skill simulation result for simulation id ${simulationId}`))
+            } else if (response.status === SIMULATION_STATUS.IN_PROGRESS) {
+              setTimeout(async () => {
+                const pollResult = await this.smapiClient.simulationStatus(this.skillId, simulationId)
+                pollSimulationResult(pollResult)
+              }, 2000)
+            } else if (response.status === SIMULATION_STATUS.SUCCESSFUL) {
+              resolve()
 
-                  let messageText
-                  if (simulationResult && simulationResult.outputSpeech) {
-                    messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
+              const simulationRequest = response.result.skillExecutionInfo.invocationRequest.body.request
+              debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
+              const simulationResult = response.result.skillExecutionInfo.invocationResponse.body.response
+              debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
+
+              let messageText
+              if (simulationResult && simulationResult.outputSpeech) {
+                messageText = simulationResult.outputSpeech.text || simulationResult.outputSpeech.ssml
+              }
+
+              let media
+              if (simulationResult && simulationResult.directives) {
+                simulationResult.directives.forEach(directive => {
+                  if (directive.type.includes('AudioPlayer')) {
+                    const audioPlayerObject = directive
+                    media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
+                      mediaUri: audioPlayerObject.audioItem.stream.url
+                    }] : undefined)
                   }
+                })
+              }
 
-                  let media
-                  if (simulationResult && simulationResult.directives) {
-                    simulationResult.directives.forEach(directive => {
-                      if (directive.type.includes('AudioPlayer')) {
-                        const audioPlayerObject = directive
-                        media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
-                          mediaUri: audioPlayerObject.audioItem.stream.url
-                        }] : undefined)
-                      }
-                    })
-                  }
+              const botMsg = { sender: 'bot', sourceData: simulationResult, messageText, media }
 
-                  const botMsg = { sender: 'bot', sourceData: simulationResult, messageText, media }
-
-                  if (simulationRequest.intent && simulationRequest.intent.name) {
-                    botMsg.nlp = {
-                      intent: {
-                        name: simulationRequest.intent.name
-                      },
-                      entities: simulationRequest.intent.slots ? Object.keys(simulationRequest.intent.slots).map((key) => {
-                        return { name: key, value: simulationRequest.intent.slots[key].value }
-                      }) : []
-                    }
-                  }
-                  if (simulationResult.card) {
-                    botMsg.cards = [
-                      this._extractCard(simulationResult.card)
-                    ]
-                  }
-
-                  setTimeout(() => this.queueBotSays(botMsg), 0)
-                } else if (response.status === askConstants.SKILL.SIMULATION_STATUS.FAILURE) {
-                  if (response.result && response.result.error) {
-                    reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
-                  } else {
-                    reject(new Error(`Skill simulation for simulation id ${simulationId} returned FAILURE`))
-                  }
-                } else {
-                  reject(new Error(`Invalid response for skill simulation ${simulationId}`))
+              if (simulationRequest.intent && simulationRequest.intent.name) {
+                botMsg.nlp = {
+                  intent: {
+                    name: simulationRequest.intent.name
+                  },
+                  entities: simulationRequest.intent.slots ? Object.keys(simulationRequest.intent.slots).map((key) => {
+                    return { name: key, value: simulationRequest.intent.slots[key].value }
+                  }) : []
                 }
               }
+              if (simulationResult.card) {
+                botMsg.cards = [
+                  this._extractCard(simulationResult.card)
+                ]
+              }
+
+              setTimeout(() => this.queueBotSays(botMsg), 0)
+            } else if (response.status === SIMULATION_STATUS.FAILED) {
+              if (response.result && response.result.error) {
+                reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
+              } else {
+                reject(new Error(`Skill simulation for simulation id ${simulationId} returned FAILED`))
+              }
+            } else {
+              reject(new Error(`Invalid response for skill simulation ${simulationId}`))
             }
-            pollSimulationResult(data.body)
           }
-        }, () => reject(new Error(`No response from skill simulation api, most likely access token invalid.`))))
+        }
+        pollSimulationResult(callResponse)
       })
     }
     if (this.api === 'invocation') {
-      return new Promise((resolve, reject) => {
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise(async (resolve, reject) => {
         let currentInvocationRequest = _.clone(this.invocationRequest)
 
         if (msg.sourceData) {
@@ -207,62 +207,65 @@ class BotiumConnectorAlexaSmapi {
 
         debug(`currentInvocationRequest: ${JSON.stringify(currentInvocationRequest)}`)
 
-        askApi.callInvokeSkill(null, currentInvocationRequest, this.skillId, this.endpointRegion, this.profile, debug.enabled, smapiCallbackTimeout((data) => {
-          const callResponse = askTools.convertDataToJsonObject(data.body)
-          debug(`callResponse: ${JSON.stringify(callResponse)}`)
+        let callResponse = null
+        try {
+          callResponse = await this.smapiClient.invoke(this.skillId, this.endpointRegion, currentInvocationRequest)
+        } catch (err) {
+          return reject(new Error(`Calling invocation API failed: ${err.message}`))
+        }
+        debug(`callResponse: ${JSON.stringify(callResponse)}`)
 
-          if (callResponse.status !== 'SUCCESSFUL') {
-            return reject(new Error(`Skill invocation returned status ${callResponse.status}`))
-          } else if (callResponse.result && callResponse.result.error) {
-            return reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
+        if (callResponse.status !== 'SUCCESSFUL') {
+          return reject(new Error(`Skill invocation returned status ${callResponse.status}`))
+        } else if (callResponse.result && callResponse.result.error) {
+          return reject(new Error(`Skill invocation failed with message: ${callResponse.result.error || callResponse.result}`))
+        }
+        resolve()
+
+        if (callResponse.result && callResponse.result.skillExecutionInfo && callResponse.result.skillExecutionInfo.invocationResponse && callResponse.result.skillExecutionInfo.invocationResponse.body) {
+          const responseBody = callResponse.result.skillExecutionInfo.invocationResponse.body
+          if (responseBody.response.shouldEndSession) {
+            this._buildNewInvokeRequest()
+          } else {
+            this.invocationRequest.session['new'] = false
+            if (responseBody.sessionAttributes) {
+              Object.assign(this.invocationRequest.session.attributes, responseBody.sessionAttributes)
+            }
           }
-          resolve()
 
-          if (callResponse.result && callResponse.result.skillExecutionInfo && callResponse.result.skillExecutionInfo.invocationResponse && callResponse.result.skillExecutionInfo.invocationResponse.body) {
-            const responseBody = callResponse.result.skillExecutionInfo.invocationResponse.body
-            if (responseBody.response.shouldEndSession) {
-              this._buildNewInvokeRequest()
-            } else {
-              this.invocationRequest.session['new'] = false
-              if (responseBody.sessionAttributes) {
-                Object.assign(this.invocationRequest.session.attributes, responseBody.sessionAttributes)
-              }
-            }
+          let messageText = 'no text response from skill'
+          if (responseBody.response.outputSpeech) {
+            messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
+          }
 
-            let messageText = 'no text response from skill'
-            if (responseBody.response.outputSpeech) {
-              messageText = responseBody.response.outputSpeech.text || responseBody.response.outputSpeech.ssml
-            }
+          let media
+          if (responseBody.response.directives) {
+            responseBody.response.directives.forEach(directive => {
+              if (directive.type.includes('AudioPlayer')) {
+                const audioPlayerObject = directive
+                const audioPlayerType = directive.type.split('.')[1].toUpperCase()
 
-            let media
-            if (responseBody.response.directives) {
-              responseBody.response.directives.forEach(directive => {
-                if (directive.type.includes('AudioPlayer')) {
-                  const audioPlayerObject = directive
-                  const audioPlayerType = directive.type.split('.')[1].toUpperCase()
-
-                  if (this.keepAudioPlayerState) {
-                    this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
-                  }
-
-                  media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
-                    mediaUri: audioPlayerObject.audioItem.stream.url
-                  }] : undefined)
+                if (this.keepAudioPlayerState) {
+                  this._handleAudioPlayerEvent(audioPlayerType, audioPlayerObject)
                 }
-              })
-            }
 
-            const botMsg = { sender: 'bot', sourceData: responseBody, messageText, media }
-
-            if (responseBody.response.card) {
-              const card = responseBody.response.card
-              botMsg.cards = [
-                this._extractCard(card)
-              ]
-            }
-            setTimeout(() => this.queueBotSays(botMsg), 0)
+                media = ((audioPlayerObject && audioPlayerObject.audioItem) ? [{
+                  mediaUri: audioPlayerObject.audioItem.stream.url
+                }] : undefined)
+              }
+            })
           }
-        }, () => reject(new Error(`No response from skill invocation api, most likely access token invalid.`))))
+
+          const botMsg = { sender: 'bot', sourceData: responseBody, messageText, media }
+
+          if (responseBody.response.card) {
+            const card = responseBody.response.card
+            botMsg.cards = [
+              this._extractCard(card)
+            ]
+          }
+          setTimeout(() => this.queueBotSays(botMsg), 0)
+        }
       })
     }
     return Promise.resolve()
