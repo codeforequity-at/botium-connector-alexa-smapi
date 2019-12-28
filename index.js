@@ -1,10 +1,11 @@
 const uuidv1 = require('uuid/v1')
 const _ = require('lodash')
-const askApi = require('ask-cli/lib/api/api-wrapper')
-const askConstants = require('ask-cli/lib/utils/constants')
-const askTools = require('ask-cli/lib/utils/tools')
+// const askApi = require('ask-cli/lib/api/api-wrapper')
+// const askConstants = require('ask-cli/lib/utils/constants')
+// const askTools = require('ask-cli/lib/utils/tools')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
+const { Defaults, Capabilities } = require('./src/constants')
 const { importAlexaIntents } = require('./src/alexaintents')
 
 const ALEXA_SMAPI_CALL_TIMEOUT_DEFAULT = 10000
@@ -27,6 +28,8 @@ class BotiumConnectorAlexaSmapi {
 
   Validate () {
     debug('Validate called')
+    this.caps = Object.assign({}, Defaults, this.caps)
+
     if (this.caps['ALEXA_SMAPI_API'] && this.caps['ALEXA_SMAPI_API'] !== 'simulation' && this.caps['ALEXA_SMAPI_API'] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invoication"')
     if (!this.caps['ALEXA_SMAPI_SKILLID']) throw new Error('ALEXA_SMAPI_SKILLID capability required')
 
@@ -47,14 +50,6 @@ class BotiumConnectorAlexaSmapi {
 
     this.keepAudioPlayerState = !!this.caps['ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE']
 
-    if (this.caps['ALEXA_SMAPI_REFRESHTOKEN'] || this.caps['ALEXA_SMAPI_ACCESSTOKEN']) {
-      this.profile = askConstants.PLACEHOLDER.ENVIRONMENT_VAR.PROFILE_NAME
-
-      process.env.ASK_REFRESH_TOKEN = this.caps['ALEXA_SMAPI_REFRESHTOKEN']
-      process.env.ASK_ACCESS_TOKEN = this.caps['ALEXA_SMAPI_ACCESSTOKEN']
-    } else {
-      this.profile = this.caps['ALEXA_SMAPI_AWSPROFILE'] || 'default'
-    }
     if (this.api !== 'invocation' && this.api !== 'simulation') {
       return Promise.reject(new Error(`ALEXA_SMAPI_API ${this.api} not supported, only simulation and invocation`))
     }

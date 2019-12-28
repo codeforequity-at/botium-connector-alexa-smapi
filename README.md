@@ -50,19 +50,17 @@ _Already integrated into Botium Box, no setup required_
 
 ## Connecting Amazon Alexa Skills API to Botium
 
-The Amazon Skill Developer Kit has to be installed and configured to retrieve the credentials for accessing the Skill. 
+This connector includes a CLI wizard to initialize the _botium.json_ file holding your connection credentials.
 
-### Install and Initialize ASK CLI
+_This wizard is part of Botium CLI as well._
 
-Follow [Amazon's instructions](https://developer.amazon.com/de/docs/smapi/quick-start-alexa-skills-kit-command-line-interface.html) to install and initialize the AWS profile and the Amazon Skill Developer Kit. You have to provide your Amazon username/password in this step.
+    > npx botium-connector-alexa-smapi-cli init
 
-### Retrieve AWS credentials
-
-The credentials are stored in the file ~/.ask/cli_config - you can either copy & paste the credentials out of this file and use Botium capabilities for configuration, or rely on Botium to read this file automatically. 
+This wizard will guide you through the Botium Connector setup. Please follow the instructions. It involves Copy&Paste from a web browser to this terminal window.
 
 ### Adapt botium.json
 
-Open the file _botium.json_ in your working directory and add the Skill settings:
+Open the file _botium.json_ in your working directory and add other settings if required.
 
 ```
 {
@@ -79,7 +77,7 @@ Open the file _botium.json_ in your working directory and add the Skill settings
 
 Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
 
-## Using the botium-connector-alexa-smapi-cli
+## Extracting Test Cases from the Alexa Interaction Model 
 
 This connector provides a CLI interface for importing the Interaction Model from your skill and convert it to BotiumScript.
 
@@ -91,13 +89,13 @@ This connector provides a CLI interface for importing the Interaction Model from
 
 You can either run the CLI with botium-cli (it is integrated there), or directly from this connector (see samples/cli directory for some examples):
 
-    > botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json
+    > npx botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json
 
 _Please note that a botium-core installation is required_
 
 For getting help on the available CLI options and switches, run:
 
-    > botium-connector-alexa-smapi-cli alexaimport --help
+    > npx botium-connector-alexa-smapi-cli alexaimport --help
 
 ## Supported Capabilities
 
@@ -123,29 +121,29 @@ _default: "en-US"_
 
 The locale used for the simulation / invocation - list of valid locales see [here](https://developer.amazon.com/de/docs/smapi/skill-simulation-api.html#request-attributes-definition)
 
-### AWS Credentials
+### ALEXA_SMAPI_REFRESHTOKEN or ALEXA_SMAPI_ACCESSTOKEN
 
-If nothing of the below is configured, the ~/.ask/cli_config file will be read. This file was created during the initialization phase above. 
+The long-living refresh token and (optionally) a short-living access token. Typically, the refresh token is created with the initialization wizard (see above), and the access token is created automatically on request.
 
-_In a CI/CD environment, it typically makes more sense to not rely on the presence of this file, but configure the access token with following capabilities_
+### ALEXA_SMAPI_BASE_URL
+_default: "https://api.amazonalexa.com"_
 
-#### ALEXA_SMAPI_REFRESHTOKEN or ALEXA_SMAPI_ACCESSTOKEN
+Skill Management API Url
 
-Copy on of these from the ~/.ask/cli_config file, typically it makes more sense to copy the refresh token (as the access token has a short expiry time).
+### ALEXA_SMAPI_CLIENTID and ALEXA_SMAPI_CLIENTSECRET
+From your Amazon Security Profile
 
-#### ALEXA_SMAPI_CALL_TIMEOUT
+### ALEXA_SMAPI_VENDORID
+Amazon vendor id
+
+### ALEXA_SMAPI_CALL_TIMEOUT
 _default: 10000_
 
 Given in milliseconds.
 
 Botium will bring an error if the SMAPI request doesn't return within a short period of time. In this case most likely the refresh token is invalid.
 
-#### ALEXA_SMAPI_AWSPROFILE
-_default: "default"_
-
-If using multiple aws/ask profiles, specify the one to use
-
-#### ALEXA_SMAPI_ENDPOINTREGION
+### ALEXA_SMAPI_ENDPOINTREGION
 _default: "default"_
 
 The AWS Endpoint the Skill is linked to (only required for Skill Invocation API) - see [here](https://developer.amazon.com/de/docs/smapi/skill-invocation-api.html#request-attributes-definition)
@@ -160,15 +158,17 @@ _default: false_
 These will add Audio and Display capabilities when set to true to the invocation request sent to the Skill Management API.
 
 ### ALEXA_SMAPI_REFRESH_USER_ID
-#### This only works with the invocation API
 _default: false_
 
-This will generate a new userId to send within each different conv.txt file. By default the userId is `botium-core-test-user` and when
+**This only works with the invocation API**
+
+This will generate a new userId to send within each different convo.txt file. By default the userId is `botium-core-test-user` and when
 generated the user will be `botium-core-test-user-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` with a randomly generated UUID.
 
 ### ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE
-#### This only works with the invocation API
 _default: false_
+
+**This only works with the invocation API**
 
 If your skill contains audio player responses this will track the changes to the audio player such as the `token` and the `playerActivity`
 and allow you to use intents such as `AudioPlayer.PlaybackNearlyFinished` and other `AudioPlayer` intents and get the state back on the response.

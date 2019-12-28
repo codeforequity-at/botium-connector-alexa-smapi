@@ -6,10 +6,10 @@ const mkdirp = require('mkdirp')
 const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const _ = require('lodash')
-const askApi = require('ask-cli/lib/api/api-wrapper')
-const askTools = require('ask-cli/lib/utils/tools')
 const botium = require('botium-core')
 const debug = require('debug')('botium-connector-alexa-smapi-intents')
+
+const SmapiClient = require('./SmapiClient')
 
 const getCaps = (caps) => {
   const result = caps || {}
@@ -22,7 +22,7 @@ const writeConvo = (compiler, convo, outputDir) => {
 
   mkdirp.sync(outputDir)
 
-  const scriptData = compiler.Decompile([ convo ], 'SCRIPTING_FORMAT_TXT')
+  const scriptData = compiler.Decompile([convo], 'SCRIPTING_FORMAT_TXT')
 
   fs.writeFileSync(filename, scriptData)
   return filename
@@ -33,7 +33,7 @@ const writeUtterances = (utterance, samples, outputDir) => {
 
   mkdirp.sync(outputDir)
 
-  const scriptData = [ utterance, ...samples ].map(s => s.trim()).join('\n')
+  const scriptData = [utterance, ...samples].map(s => s.trim()).join('\n')
 
   fs.writeFileSync(filename, scriptData)
   return filename
@@ -73,22 +73,11 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
     interactionModelJson = JSON.parse(fs.readFileSync(interactionmodel))
   } else {
     debug(`Loading interaction model from Alexa API`)
-    interactionModelJson = await (new Promise((resolve, reject) => {
-      askApi.callGetModel(
-        container.pluginInstance.skillId,
-        'development',
-        container.pluginInstance.locale,
-        container.pluginInstance.profile,
-        debug.enabled,
-        (data) => {
-          if (data && data.body) {
-            resolve(askTools.convertDataToJsonObject(data.body))
-          } else {
-            reject(new Error(`Got no response from callGetModel`))
-          }
-        }
-      )
-    }))
+    const smapiClient = new SmapiClient(container.pluginInstance.caps)
+    await smapiClient.refresh()
+    const model = await smapiClient.getInteractionModel(container.pluginInstance.skillId, 'development', container.pluginInstance.locale)
+    interactionModelJson = model
+
     debug('Downloaded Alexa InteractionModel: ', JSON.stringify(interactionModelJson, null, 2))
   }
   debug(`Got Alexa InteractionModel with ${interactionModelJson.interactionModel.languageModel.intents.length} intents`)
@@ -132,7 +121,7 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
         let expandedSamples = []
         const reSlots = /{(.*?)}/g
         samples.forEach(s => {
-          let sExpanded = [ s ]
+          let sExpanded = [s]
 
           const reMatches = (s.match(reSlots) || []).map(e => RegExp(reSlots.source, reSlots.flags).exec(e))
           if (reMatches.length > 0) {
@@ -212,7 +201,7 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
 
 const handler = (argv) => {
   if (argv.slotsamples) {
-    argv.slotsamples = _.isArray(argv.slotsamples) ? argv.slotsamples : [ argv.slotsamples ]
+    argv.slotsamples = _.isArray(argv.slotsamples) ? argv.slotsamples : [argv.slotsamples]
 
     argv.slotsamples = argv.slotsamples.reduce((cum, ss) => {
       if (ss.split('=').length !== 2) {
