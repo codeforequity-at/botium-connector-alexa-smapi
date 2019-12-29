@@ -227,7 +227,7 @@ class BotiumConnectorAlexaSmapi {
           if (responseBody.response.shouldEndSession) {
             this._buildNewInvokeRequest()
           } else {
-            this.invocationRequest.session['new'] = false
+            this.invocationRequest.session.new = false
             if (responseBody.sessionAttributes) {
               Object.assign(this.invocationRequest.session.attributes, responseBody.sessionAttributes)
             }
@@ -332,7 +332,7 @@ class BotiumConnectorAlexaSmapi {
 
   _buildNewInvokeRequest () {
     this.invocationRequest = _.clone(this.invocationRequestTemplate)
-    this.invocationRequest.session['new'] = true
+    this.invocationRequest.session.new = true
     this.invocationRequest.session.sessionId = uuidv1()
     this.invocationRequest.session.application.applicationId = this.skillId
     this.invocationRequest.context.System.application.applicationId = this.skillId

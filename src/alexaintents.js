@@ -72,7 +72,7 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
     debug(`Reading interaction model from file ${interactionmodel}`)
     interactionModelJson = JSON.parse(fs.readFileSync(interactionmodel))
   } else {
-    debug(`Loading interaction model from Alexa API`)
+    debug('Loading interaction model from Alexa API')
     const smapiClient = new SmapiClient(container.pluginInstance.caps)
     await smapiClient.refresh()
     const model = await smapiClient.getInteractionModel(container.pluginInstance.skillId, 'development', container.pluginInstance.locale)
