@@ -107,7 +107,7 @@ Set the CONTAINERMODE capability to alexa-smapi
 _default: "simulation"_
 
 Either "simulation" or "invocation" to use the respective [Skill Management API](https://developer.amazon.com/de/docs/smapi/skill-testing-operations.html)
-* __Skill Simulation API__ handles plain text input (including intent resolution), but doesn't provide session tracking - only one-shot-conversations supported
+* __Skill Simulation API__ handles plain text input (including intent resolution)
 * __Skill Invocation API__ handles structured input (intents and slots, no intent resolution done) and is therefore harder to use than the Simulation API
 
 See the [samples](samples) directory for configuration and conversation samples.
