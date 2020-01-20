@@ -8,4 +8,5 @@ yargsCmd.usage('Botium Connector Alexa SMAPI CLI\n\nUsage: $0 [options]') // esl
   .strict(true)
   .demandCommand(1, 'You need at least one command before moving on')
   .command(require('../src/alexaintents').args)
+  .command(require('../src/init').args)
   .argv
