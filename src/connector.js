@@ -25,7 +25,7 @@ class BotiumConnectorAlexaSmapi {
     debug('Validate called')
     this.caps = Object.assign({}, Defaults, this.caps)
 
-    if (this.caps[Capabilities.ALEXA_SMAPI_API] !== 'simulation' && this.caps[Capabilities.ALEXA_SMAPI_API] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invoication"')
+    if (this.caps[Capabilities.ALEXA_SMAPI_API] !== 'simulation' && this.caps[Capabilities.ALEXA_SMAPI_API] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invocation"')
     if (!this.caps[Capabilities.ALEXA_SMAPI_SKILLID]) throw new Error('ALEXA_SMAPI_SKILLID capability required')
 
     return Promise.resolve()
@@ -61,7 +61,7 @@ class BotiumConnectorAlexaSmapi {
           this.invocationRequestTemplate = this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_REQUEST_TEMPLATE]
         }
       } else {
-        this.invocationRequestTemplate = require('./invocation-request-template.json')
+        this.invocationRequestTemplate = require('../invocation-request-template.json')
       }
 
       this.invocationTextIntent = this.caps[Capabilities.ALEXA_SMAPI_INVOCATION_TEXT_INTENT]
