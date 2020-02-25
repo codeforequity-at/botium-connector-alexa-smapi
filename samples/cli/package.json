@@ -2,12 +2,11 @@
   "name": "cli",
   "version": "1.0.0",
   "scripts": {
-    "demo1": "botium-connector-alexa-smapi-cli alexaimport --interactionmodel planmytripdemo.json --slotsamples \"travelDate=tomorrow|july fifth\"",
-    "demo2": "botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json",
-    "demo3": "botium-connector-alexa-smapi-cli alexaimport --interactionmodel unitedstatesquizgame.json --slotsamples \"statehood_order=1\" --slotsamples \"statehood_year=1853|1897\""
+    "demo1": "botium-connector-alexa-smapi-cli import --buildconvos --interactionmodel planmytripdemo.json --output demo1",
+    "demo2": "botium-connector-alexa-smapi-cli import --buildconvos --interactionmodel entityresolutionquizdemo.json --output demo2",
+    "demo3": "botium-connector-alexa-smapi-cli import --buildconvos --interactionmodel unitedstatesquizgame.json --slotsamples \"statehood_year=1853|1897\" --output demo3"
   },
   "devDependencies": {
-    "botium-core": "latest",
     "botium-connector-alexa-smapi": "../../"
   }
 }
