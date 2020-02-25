@@ -1,5 +1,5 @@
 {
-  "#en": {
+  "en": {
     "AMAZON.DATE": [
       "today",
       "tomorrow",
@@ -60,7 +60,7 @@
       "now"
     ]
   },
-  "#de": {
+  "de": {
     "AMAZON.DATE": [
       "heute",
       "morgen",

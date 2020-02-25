@@ -8,6 +8,7 @@ const _ = require('lodash')
 const { BotDriver } = require('botium-core')
 
 const { importHandler, importArgs } = require('../src/alexaintents')
+const { downloadSlotTypes, SLOT_TYPE_LANGUAGES, SLOT_TYPES_URL } = require('../src/slottypes')
 
 const writeConvo = (compiler, convo, outputDir) => {
   const filename = path.resolve(outputDir, slug(convo.header.name) + '.convo.txt')
@@ -96,6 +97,28 @@ yargsCmd.usage('Botium Connector Alexa SMAPI CLI\n\nUsage: $0 [options]') // esl
           console.log(`WARNING: writing utterances "${utterance.name}" failed: ${err.message}`)
         }
       }
+    }
+  })
+  .command({
+    command: 'getslottypesamples',
+    describe: `Downloading slot type samples from ${SLOT_TYPES_URL}`,
+    builder: (yargs) => {
+      yargs.option('output', {
+        describe: 'Output file',
+        type: 'string',
+        default: './slottypesamples.json'
+      })
+    },
+    handler: async (argv) => {
+      const outputFile = argv.output
+
+      const slotTypeSamples = {}
+      for (const language of SLOT_TYPE_LANGUAGES) {
+        console.log(`Downloading slot type samples for language ${language}`)
+        slotTypeSamples[language] = await downloadSlotTypes(language)
+      }
+      fs.writeFileSync(outputFile, JSON.stringify(slotTypeSamples, null, 2))
+      console.log(`Wrote slot type samples to file ${outputFile}`)
     }
   })
   .argv

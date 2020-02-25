@@ -5,7 +5,7 @@ const botium = require('botium-core')
 const debug = require('debug')('botium-connector-alexa-smapi-intents')
 
 const SmapiClient = require('./SmapiClient')
-const { loadSlotTypes, SLOT_TYPES_URL } = require('./slottypes')
+const { loadSlotTypes, expandSlotType, extractSlotNames, SLOT_TYPES_URL, SLOT_TYPE_LANGUAGES } = require('./slottypes')
 
 const getCaps = (caps) => {
   const result = caps || {}
@@ -57,14 +57,6 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
       })
 
       if (expandcustomslots || expandbuiltinslots) {
-        const expandSlotType = (sample, slotName, slotSamples) => {
-          const result = []
-          slotSamples.forEach(ss => {
-            result.push(sample.replace(`{${slotName}}`, ss))
-          })
-          return result
-        }
-
         const customSlotTypes = {}
         if (expandcustomslots && interactionModelJson.interactionModel.languageModel.types) {
           for (const typeModel of interactionModelJson.interactionModel.languageModel.types) {
@@ -78,35 +70,31 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
         }
 
         let expandedSamples = []
-        const reSlots = /{(.*?)}/g
         samples.forEach(s => {
           let sExpanded = [s]
 
-          const reMatches = (s.match(reSlots) || []).map(e => RegExp(reSlots.source, reSlots.flags).exec(e))
-          if (reMatches.length > 0) {
-            reMatches.forEach(r => {
-              const slotName = r[1]
-              const slot = intentModel.slots && intentModel.slots.find(slot => slot.name === slotName)
-              if (slot) {
-                const slotType = slot.type
-                if (slotsamples && slotsamples[slotName]) {
-                  sExpanded = sExpanded.reduce((cum, sToExpand) => {
-                    return cum.concat(expandSlotType(sToExpand, slotName, slotsamples[slotName]))
-                  }, [])
-                } else if (builtinSlotTypes && expandbuiltinslots && builtinSlotTypes[slotType]) {
-                  sExpanded = sExpanded.reduce((cum, sToExpand) => {
-                    return cum.concat(expandSlotType(sToExpand, slotName, builtinSlotTypes[slotType]))
-                  }, [])
-                } else if (customSlotTypes && expandcustomslots && customSlotTypes[slotType]) {
-                  sExpanded = sExpanded.reduce((cum, sToExpand) => {
-                    return cum.concat(expandSlotType(sToExpand, slotName, customSlotTypes[slotType]))
-                  }, [])
-                } else {
-                  debug(`Utterance "${s}" - Slot ${slotName} / ${slotType} ignored - use command line to specify samples: --slotsamples "${slotName}=sample1|sample2"`)
-                }
+          const slotNames = extractSlotNames(s)
+          slotNames.forEach(slotName => {
+            const slot = intentModel.slots && intentModel.slots.find(slot => slot.name === slotName)
+            if (slot) {
+              const slotType = slot.type
+              if (slotsamples && slotsamples[slotName]) {
+                sExpanded = sExpanded.reduce((cum, sToExpand) => {
+                  return cum.concat(expandSlotType(sToExpand, slotName, slotsamples[slotName]))
+                }, [])
+              } else if (builtinSlotTypes && expandbuiltinslots && builtinSlotTypes[slotType]) {
+                sExpanded = sExpanded.reduce((cum, sToExpand) => {
+                  return cum.concat(expandSlotType(sToExpand, slotName, builtinSlotTypes[slotType]))
+                }, [])
+              } else if (customSlotTypes && expandcustomslots && customSlotTypes[slotType]) {
+                sExpanded = sExpanded.reduce((cum, sToExpand) => {
+                  return cum.concat(expandSlotType(sToExpand, slotName, customSlotTypes[slotType]))
+                }, [])
+              } else {
+                debug(`Utterance "${s}" - Slot ${slotName} / ${slotType} ignored - use command line to specify samples: --slotsamples "${slotName}=sample1|sample2"`)
               }
-            })
-          }
+            }
+          })
           expandedSamples = expandedSamples.concat(sExpanded)
         })
         samples = _.uniq(expandedSamples)
@@ -176,8 +164,9 @@ module.exports = {
       default: true
     },
     expandbuiltinslotsid: {
-      describe: `Language table id from ${SLOT_TYPES_URL} - section "List Slot Types" (hover over language, see last part of the url, for example "#de-de1")`,
-      default: '#en-us1',
+      describe: `Slot Type Language from ${SLOT_TYPES_URL} - section "List Slot Types"`,
+      default: 'en-us',
+      choices: SLOT_TYPE_LANGUAGES,
       requiresArg: true
     },
     slotsamples: {

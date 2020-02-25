@@ -13,7 +13,8 @@
   "scripts": {
     "build": "npm run eslint && rollup -c",
     "eslint": "eslint index.js bin/**.js src/**.js",
-    "eslint-fix": "eslint --fix bin/**.js index.js src/**.js"
+    "eslint-fix": "eslint --fix bin/**.js index.js src/**.js",
+    "getslottypesamples": "node bin/cli.js getslottypesamples --output data/builtinslottypesamples.json"
   },
   "repository": {
     "type": "git",

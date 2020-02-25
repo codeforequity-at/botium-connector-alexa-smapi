@@ -89,13 +89,13 @@ This connector provides a CLI interface for importing the Interaction Model from
 
 You can either run the CLI with botium-cli (it is integrated there), or directly from this connector (see samples/cli directory for some examples):
 
-    > npx botium-connector-alexa-smapi-cli alexaimport --interactionmodel entityresolutionquizdemo.json
+    > npx botium-connector-alexa-smapi-cli import --interactionmodel entityresolutionquizdemo.json
 
 _Please note that a botium-core installation is required_
 
 For getting help on the available CLI options and switches, run:
 
-    > npx botium-connector-alexa-smapi-cli alexaimport --help
+    > npx botium-connector-alexa-smapi-cli import --help
 
 ## Supported Capabilities
 
