@@ -27,6 +27,7 @@ class BotiumConnectorAlexaSmapi {
 
     if (this.caps[Capabilities.ALEXA_SMAPI_API] !== 'simulation' && this.caps[Capabilities.ALEXA_SMAPI_API] !== 'invocation') throw new Error('ALEXA_SMAPI_API capability invalid (allowed values: "simulation", "invocation"')
     if (!this.caps[Capabilities.ALEXA_SMAPI_SKILLID]) throw new Error('ALEXA_SMAPI_SKILLID capability required')
+    if (!this.caps[Capabilities.ALEXA_SMAPI_REFRESHTOKEN]) throw new Error('ALEXA_SMAPI_REFRESHTOKEN capability required')
 
     return Promise.resolve()
   }
@@ -156,7 +157,23 @@ class BotiumConnectorAlexaSmapi {
               setTimeout(() => this.queueBotSays(botMsg), 0)
             } else if (response.status === SIMULATION_STATUS.FAILED) {
               if (response.result && response.result.error) {
-                reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
+                if (response.result.error.message.includes('did not resolve to any intent in your skill')) {
+                  resolve()
+                  setTimeout(() => this.queueBotSays(
+                    {
+                      sender: 'bot',
+                      sourceData: response.result.error.message,
+                      nlp: {
+                        intent: {
+                          name: 'None',
+                          incomprehension: true
+                        }
+                      }
+                    }
+                  ), 0)
+                } else {
+                  reject(new Error(`Skill simulation for simulation id ${simulationId} failed with message: ${response.result.error.message || JSON.stringify(response.result.error)}`))
+                }
               } else {
                 reject(new Error(`Skill simulation for simulation id ${simulationId} returned FAILED`))
               }
