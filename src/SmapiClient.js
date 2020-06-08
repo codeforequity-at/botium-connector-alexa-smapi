@@ -9,28 +9,41 @@ class SmapiClient {
   }
 
   async refresh () {
-    this.oauthClient = oauth2.create({
-      client: {
-        id: this.caps[Capabilities.ALEXA_SMAPI_CLIENTID],
-        secret: this.caps[Capabilities.ALEXA_SMAPI_CLIENTSECRET]
-      },
-      auth: {
-        authorizeHost: LWA.AUTHORIZE_HOST,
-        authorizePath: LWA.AUTHORIZE_PATH,
-        tokenHost: LWA.TOKEN_HOST,
-        tokenPath: LWA.TOKEN_PATH
-      }
-    })
+    try {
+      this.oauthClient = oauth2.create({
+        client: {
+          id: this.caps[Capabilities.ALEXA_SMAPI_CLIENTID],
+          secret: this.caps[Capabilities.ALEXA_SMAPI_CLIENTSECRET]
+        },
+        auth: {
+          authorizeHost: LWA.AUTHORIZE_HOST,
+          authorizePath: LWA.AUTHORIZE_PATH,
+          tokenHost: LWA.TOKEN_HOST,
+          tokenPath: LWA.TOKEN_PATH
+        }
+      })
+    } catch (err) {
+      throw new Error(`Cant create oauth client ${err}`)
+    }
 
-    const token = this.oauthClient.accessToken.create({
-      access_token: 'ACCESS_TOKEN_PLACE_HOLDER',
-      refresh_token: this.caps[Capabilities.ALEXA_SMAPI_REFRESHTOKEN],
-      token_type: 'bearer',
-      expires_in: 0,
-      expires_at: 0
-    })
-    const result = await token.refresh()
-    this.accessToken = result.token.access_token
+    let token
+    try {
+      token = this.oauthClient.accessToken.create({
+        access_token: 'ACCESS_TOKEN_PLACE_HOLDER',
+        refresh_token: this.caps[Capabilities.ALEXA_SMAPI_REFRESHTOKEN],
+        token_type: 'bearer',
+        expires_in: 0,
+        expires_at: 0
+      })
+    } catch (err) {
+      throw new Error(`Cant create oauth token ${err}`)
+    }
+    try {
+      const result = await token.refresh()
+      this.accessToken = result.token.access_token
+    } catch (err) {
+      throw new Error(`Cant refresh access token ${err}`)
+    }
     debug('Access Token Refreshed ...')
   }
 

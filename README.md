@@ -121,9 +121,9 @@ _default: "en-US"_
 
 The locale used for the simulation / invocation - list of valid locales see [here](https://developer.amazon.com/de/docs/smapi/skill-simulation-api.html#request-attributes-definition)
 
-### ALEXA_SMAPI_REFRESHTOKEN or ALEXA_SMAPI_ACCESSTOKEN
+### ALEXA_SMAPI_REFRESHTOKEN
 
-The long-living refresh token and (optionally) a short-living access token. Typically, the refresh token is created with the initialization wizard (see above), and the access token is created automatically on request.
+The long-living refresh token. Typically, the refresh token is created with the initialization wizard (see above).
 
 ### ALEXA_SMAPI_BASE_URL
 _default: "https://api.amazonalexa.com"_
