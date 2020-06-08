@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "test": "mocha spec --exit",
-    "import": "botium-connector-alexa-smapi-cli alexaimport"
+    "import-utterances": "botium-connector-alexa-smapi-cli import --output spec/import",
+    "import-convos": "botium-connector-alexa-smapi-cli import --buildconvos --output spec/import",
+    "export": "botium-connector-alexa-smapi-cli export --input spec/import"
   },
   "botium": {
     "convodirs": [
-      "spec\\convo"
+      "spec/convo"
     ],
     "expandConvos": true,
     "expandUtterancesToConvos": false

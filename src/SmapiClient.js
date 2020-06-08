@@ -60,6 +60,19 @@ class SmapiClient {
     return request(requestOptions)
   }
 
+  async put (api, queryParams, body) {
+    var requestOptions = {
+      method: 'PUT',
+      uri: `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`,
+      qs: queryParams || {},
+      headers: {
+        Authorization: this.accessToken
+      },
+      json: body
+    }
+    return request(requestOptions)
+  }
+
   async vendors () {
     const result = await this.get('vendors')
     return result.vendors
@@ -74,6 +87,17 @@ class SmapiClient {
 
   async getInteractionModel (skillId, stage, locale) {
     const result = await this.get(`skills/${skillId}/stages/${stage}/interactionModel/locales/${locale}`)
+    return result
+  }
+
+  async putInteractionModel (skillId, stage, locale, interactionModel) {
+    const result = await this.put(
+      `skills/${skillId}/stages/${stage}/interactionModel/locales/${locale}`,
+      {},
+      {
+        interactionModel
+      }
+    )
     return result
   }
 

@@ -8,6 +8,7 @@ const _ = require('lodash')
 const { BotDriver } = require('botium-core')
 
 const { importHandler, importArgs } = require('../src/alexaintents')
+const { exportHandler, exportArgs } = require('../src/alexaintents')
 const { downloadSlotTypes, SLOT_TYPE_LANGUAGES, SLOT_TYPES_URL } = require('../src/slottypes')
 
 const writeConvo = (compiler, convo, outputDir) => {
@@ -96,6 +97,38 @@ yargsCmd.usage('Botium Connector Alexa SMAPI CLI\n\nUsage: $0 [options]') // esl
         } catch (err) {
           console.log(`WARNING: writing utterances "${utterance.name}" failed: ${err.message}`)
         }
+      }
+    }
+  })
+  .command({
+    command: 'export',
+    describe: 'Uploading Utterances from Botium to Alexa interaction model',
+    builder: (yargs) => {
+      for (const arg of Object.keys(exportArgs)) {
+        if (exportArgs[arg].skipCli) continue
+        yargs.option(arg, exportArgs[arg])
+      }
+      yargs.option('input', {
+        describe: 'Input directory',
+        type: 'string',
+        default: '.'
+      })
+    },
+    handler: async (argv) => {
+      const inputDir = argv.input
+
+      const driver = new BotDriver()
+      const compiler = driver.BuildCompiler()
+      compiler.ReadScriptsFromDirectory(inputDir)
+
+      const convos = []
+      const utterances = Object.keys(compiler.utterances).reduce((acc, u) => acc.concat([compiler.utterances[u]]), [])
+
+      try {
+        const result = await exportHandler(argv, { convos, utterances }, { statusCallback: (log, obj) => console.log(log, obj) })
+        console.log(JSON.stringify(result, null, 2))
+      } catch (err) {
+        console.log(`FAILED: ${err.message}`)
       }
     }
   })
