@@ -141,12 +141,6 @@ const importAlexaIntents = async ({ caps, buildconvos, expandcustomslots, expand
 }
 
 const exportAlexaIntents = async ({ caps, getjson, output, interactionmodel }, { convos, utterances }, { statusCallback }) => {
-  caps = caps || {}
-  if (interactionmodel) {
-    caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
-  } else {
-    caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
-  }
   const driver = new botium.BotDriver(caps)
   const container = await driver.Build()
 
