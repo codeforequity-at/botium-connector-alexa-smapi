@@ -1,0 +1,20 @@
+{
+  "name": "simulation",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha spec --exit",
+    "import-utterances": "botium-connector-alexa-smapi-cli import --output spec/utterances",
+    "export": "botium-connector-alexa-smapi-cli export --input spec/utterances"
+  },
+  "botium": {
+    "convodirs": [
+      "spec/utterances"
+    ],
+    "expandUtterancesToConvos": true
+  },
+  "devDependencies": {
+    "mocha": "latest",
+    "botium-bindings": "latest",
+    "botium-connector-alexa-smapi": "../../"
+  }
+}

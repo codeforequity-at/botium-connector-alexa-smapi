@@ -170,3 +170,10 @@ _default: false_
 
 If your skill contains audio player responses this will track the changes to the audio player such as the `token` and the `playerActivity`
 and allow you to use intents such as `AudioPlayer.PlaybackNearlyFinished` and other `AudioPlayer` intents and get the state back on the response.
+
+### ALEXA_SMAPI_SIMULATION_PHRASE
+_default: empty_
+
+**This only works with the simulation API**
+
+Prepend this phrase to all user utterances

@@ -46,6 +46,8 @@ class BotiumConnectorAlexaSmapi {
 
     this.keepAudioPlayerState = !!this.caps[Capabilities.ALEXA_SMAPI_KEEP_AUDIO_PLAYER_STATE]
 
+    this.simulationPhrase = this.caps[Capabilities.ALEXA_SMAPI_SIMULATION_PHRASE]
+
     if (this.api !== 'invocation' && this.api !== 'simulation') {
       return Promise.reject(new Error(`ALEXA_SMAPI_API ${this.api} not supported, only simulation and invocation`))
     }
@@ -88,16 +90,17 @@ class BotiumConnectorAlexaSmapi {
     debug('UserSays called')
 
     if (this.api === 'simulation') {
-      this.forceNewSession = false
-
       // eslint-disable-next-line no-async-promise-executor
       return new Promise(async (resolve, reject) => {
+        const sendText = this.simulationPhrase ? `${this.simulationPhrase} ${msg.messageText}` : msg.messageText
+
         let callResponse = null
         try {
-          callResponse = await this.smapiClient.simulate(this.skillId, 'development', this.locale, msg.messageText, this.forceNewSession)
+          callResponse = await this.smapiClient.simulate(this.skillId, 'development', this.locale, sendText, this.forceNewSession)
         } catch (err) {
           return reject(new Error(`Calling simulation API failed: ${err.message}`))
         }
+        this.forceNewSession = false
         const simulationId = callResponse.id
         debug(`Simulation created for simulation id ${simulationId}, polling for response ...`)
 
@@ -114,9 +117,9 @@ class BotiumConnectorAlexaSmapi {
             } else if (response.status === SIMULATION_STATUS.SUCCESSFUL) {
               resolve()
 
-              const simulationRequest = response.result.skillExecutionInfo.invocationRequest.body.request
+              const simulationRequest = _.get(response, 'result.skillExecutionInfo.invocationRequest.body.request')
               debug(`got simulation request: ${JSON.stringify(simulationRequest)}`)
-              const simulationResult = response.result.skillExecutionInfo.invocationResponse.body.response
+              const simulationResult = _.get(response, 'result.skillExecutionInfo.invocationResponse.body.response')
               debug(`got simulation result: ${JSON.stringify(simulationResult)}`)
 
               let messageText
@@ -136,7 +139,7 @@ class BotiumConnectorAlexaSmapi {
                 })
               }
 
-              const botMsg = { sender: 'bot', sourceData: simulationResult, messageText, media }
+              const botMsg = { sender: 'bot', sourceData: response, messageText, media }
 
               if (simulationRequest.intent && simulationRequest.intent.name) {
                 botMsg.nlp = {
@@ -162,7 +165,8 @@ class BotiumConnectorAlexaSmapi {
                   setTimeout(() => this.queueBotSays(
                     {
                       sender: 'bot',
-                      sourceData: response.result.error.message,
+                      sourceData: response,
+                      messagetext: response.result.error.message,
                       nlp: {
                         intent: {
                           name: 'None',
