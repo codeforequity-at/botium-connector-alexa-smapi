@@ -1,4 +1,3 @@
-const path = require('path')
 const fs = require('fs')
 const _ = require('lodash')
 const botium = require('botium-core')
@@ -9,7 +8,6 @@ const { loadSlotTypes, expandSlotType, extractSlotNames, SLOT_TYPES_URL, SLOT_TY
 
 const getCaps = (caps) => {
   const result = caps || {}
-  result[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
   return result
 }
 
