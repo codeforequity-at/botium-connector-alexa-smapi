@@ -1,5 +1,4 @@
 const oauth2 = require('simple-oauth2')
-const request = require('request-promise-native')
 const debug = require('debug')('botium-connector-alexa-smapi-client')
 const { Capabilities, LWA, SMAPI } = require('./constants')
 
@@ -48,42 +47,67 @@ class SmapiClient {
   }
 
   async get (api, queryParams) {
-    var requestOptions = {
+    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
+    const url = new URL(baseUrl)
+    if (queryParams) {
+      Object.keys(queryParams).forEach(key => {
+        url.searchParams.append(key, queryParams[key])
+      })
+    }
+    const response = await fetch(url.toString(), {
       method: 'GET',
-      uri: `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`,
-      qs: queryParams || {},
       headers: {
         Authorization: this.accessToken
-      },
-      json: true
+      }
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
-    return request(requestOptions)
+    return response.json()
   }
 
   async post (api, queryParams, body) {
-    var requestOptions = {
-      method: 'POST',
-      uri: `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`,
-      qs: queryParams || {},
-      headers: {
-        Authorization: this.accessToken
-      },
-      json: body
+    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
+    const url = new URL(baseUrl)
+    if (queryParams) {
+      Object.keys(queryParams).forEach(key => {
+        url.searchParams.append(key, queryParams[key])
+      })
     }
-    return request(requestOptions)
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: this.accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return response.json()
   }
 
   async put (api, queryParams, body) {
-    var requestOptions = {
-      method: 'PUT',
-      uri: `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`,
-      qs: queryParams || {},
-      headers: {
-        Authorization: this.accessToken
-      },
-      json: body
+    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
+    const url = new URL(baseUrl)
+    if (queryParams) {
+      Object.keys(queryParams).forEach(key => {
+        url.searchParams.append(key, queryParams[key])
+      })
     }
-    return request(requestOptions)
+    const response = await fetch(url.toString(), {
+      method: 'PUT',
+      headers: {
+        Authorization: this.accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return response.json()
   }
 
   async vendors () {

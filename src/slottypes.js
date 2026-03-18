@@ -1,4 +1,3 @@
-const request = require('request-promise-native')
 const cheerio = require('cheerio')
 const debug = require('debug')('botium-connector-alexa-smapi-slottypes')
 
@@ -11,7 +10,11 @@ const SLOT_TYPE_LANGUAGES = ['en-au', 'en-ca', 'en-gb', 'en-us', 'fr-ca', 'fr-fr
 const downloadSlotTypes = async (language) => {
   const tableId = `#${language}1`
   debug(`Downloading slot type samples for language ${language} from ${SLOT_TYPES_URL}`)
-  const htmlString = await request(SLOT_TYPES_URL)
+  const response = await fetch(SLOT_TYPES_URL)
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  const htmlString = await response.text()
   const $ = cheerio.load(htmlString)
 
   const slotTypes = {}
