@@ -1,4 +1,5 @@
-const oauth2 = require('simple-oauth2')
+const { AuthorizationCode } = require('simple-oauth2')
+const axios = require('axios').default
 const debug = require('debug')('botium-connector-alexa-smapi-client')
 const { Capabilities, LWA, SMAPI } = require('./constants')
 
@@ -9,7 +10,7 @@ class SmapiClient {
 
   async refresh () {
     try {
-      this.oauthClient = oauth2.create({
+      this.oauthClient = new AuthorizationCode({
         client: {
           id: this.caps[Capabilities.ALEXA_SMAPI_CLIENTID],
           secret: this.caps[Capabilities.ALEXA_SMAPI_CLIENTSECRET]
@@ -27,7 +28,7 @@ class SmapiClient {
 
     let token
     try {
-      token = this.oauthClient.accessToken.create({
+      token = this.oauthClient.createToken({
         access_token: 'ACCESS_TOKEN_PLACE_HOLDER',
         refresh_token: this.caps[Capabilities.ALEXA_SMAPI_REFRESHTOKEN],
         token_type: 'bearer',
@@ -46,68 +47,35 @@ class SmapiClient {
     debug('Access Token Refreshed ...')
   }
 
-  async get (api, queryParams) {
-    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
-    const url = new URL(baseUrl)
-    if (queryParams) {
-      Object.keys(queryParams).forEach(key => {
-        url.searchParams.append(key, queryParams[key])
+  async _request (method, api, queryParams, body) {
+    const url = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
+    try {
+      const response = await axios({
+        method,
+        url,
+        params: queryParams || {},
+        headers: {
+          Authorization: this.accessToken
+        },
+        data: body
       })
+      return response.data
+    } catch (err) {
+      const status = err.response && err.response.status
+      throw new Error(status ? `HTTP error! status: ${status}` : err.message)
     }
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        Authorization: this.accessToken
-      }
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    return response.json()
+  }
+
+  async get (api, queryParams) {
+    return this._request('GET', api, queryParams)
   }
 
   async post (api, queryParams, body) {
-    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
-    const url = new URL(baseUrl)
-    if (queryParams) {
-      Object.keys(queryParams).forEach(key => {
-        url.searchParams.append(key, queryParams[key])
-      })
-    }
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        Authorization: this.accessToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    return response.json()
+    return this._request('POST', api, queryParams, body)
   }
 
   async put (api, queryParams, body) {
-    const baseUrl = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
-    const url = new URL(baseUrl)
-    if (queryParams) {
-      Object.keys(queryParams).forEach(key => {
-        url.searchParams.append(key, queryParams[key])
-      })
-    }
-    const response = await fetch(url.toString(), {
-      method: 'PUT',
-      headers: {
-        Authorization: this.accessToken,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    })
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    return response.json()
+    return this._request('PUT', api, queryParams, body)
   }
 
   async vendors () {

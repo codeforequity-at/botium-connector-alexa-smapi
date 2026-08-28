@@ -1,5 +1,5 @@
 const util = require('util')
-const oauth2 = require('simple-oauth2')
+const { AuthorizationCode } = require('simple-oauth2')
 const readline = require('readline-sync')
 const fs = require('fs')
 const debug = require('debug')('botium-connector-alexa-smapi-intents')
@@ -31,7 +31,7 @@ const handler = async (argv) => {
   const clientSecret = prompt('Copy & Paste the "Client-Secret" here: ')
   console.log('\n\n')
 
-  const oauthClient = oauth2.create({
+  const oauthClient = new AuthorizationCode({
     client: { id: clientId, secret: clientSecret },
     auth: {
       authorizeHost: LWA.AUTHORIZE_HOST,
@@ -41,7 +41,7 @@ const handler = async (argv) => {
     }
   })
 
-  const authorizeUrl = oauthClient.authorizationCode.authorizeURL({
+  const authorizeUrl = oauthClient.authorizeURL({
     redirect_uri: LWA.S3_RESPONSE_PARSER_URL,
     scope: LWA.DEFAULT_SCOPES,
     state: LWA.DEFAULT_STATE
@@ -58,8 +58,8 @@ const handler = async (argv) => {
 
   let refreshToken = null
   try {
-    const result = await oauthClient.authorizationCode.getToken(tokenConfig, {})
-    refreshToken = oauthClient.accessToken.create(result).token.refresh_token
+    const result = await oauthClient.getToken(tokenConfig)
+    refreshToken = result.token.refresh_token
     console.log('Received Refresh Token from Amazon Servers ...')
   } catch (error) {
     console.log('Access Token Error', error.message)

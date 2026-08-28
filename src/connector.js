@@ -151,7 +151,7 @@ class BotiumConnectorAlexaSmapi {
                   }) : []
                 }
               }
-              if (simulationResult.card) {
+              if (simulationResult && simulationResult.card) {
                 botMsg.cards = [
                   this._extractCard(simulationResult.card)
                 ]
@@ -166,7 +166,7 @@ class BotiumConnectorAlexaSmapi {
                     {
                       sender: 'bot',
                       sourceData: response,
-                      messagetext: response.result.error.message,
+                      messageText: response.result.error.message,
                       nlp: {
                         intent: {
                           name: 'None',
