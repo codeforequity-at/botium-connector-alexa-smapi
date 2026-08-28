@@ -1,4 +1,4 @@
-const uuidv1 = require('uuid/v1')
+const crypto = require('crypto')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-alexa-smapi')
 
@@ -215,7 +215,7 @@ class BotiumConnectorAlexaSmapi {
             }
           }
         }
-        currentInvocationRequest.request.requestId = uuidv1()
+        currentInvocationRequest.request.requestId = crypto.randomUUID()
         currentInvocationRequest.request.timestamp = (new Date()).toISOString()
 
         if (currentInvocationRequest.request.type.includes('AudioPlayer')) {
@@ -327,7 +327,7 @@ class BotiumConnectorAlexaSmapi {
   }
 
   _createNewUserId () {
-    const userId = `botium-core-test-user-${uuidv1()}`
+    const userId = `botium-core-test-user-${crypto.randomUUID()}`
     this.invocationRequest.session.user.userId = userId
     this.invocationRequest.context.System.user.userId = userId
   }
@@ -344,7 +344,7 @@ class BotiumConnectorAlexaSmapi {
       }
 
       this.invocationRequest.context.System.device = {
-        deviceId: uuidv1(),
+        deviceId: crypto.randomUUID(),
         supportedInterfaces
       }
     }
@@ -353,7 +353,7 @@ class BotiumConnectorAlexaSmapi {
   _buildNewInvokeRequest () {
     this.invocationRequest = _.clone(this.invocationRequestTemplate)
     this.invocationRequest.session.new = true
-    this.invocationRequest.session.sessionId = uuidv1()
+    this.invocationRequest.session.sessionId = crypto.randomUUID()
     this.invocationRequest.session.application.applicationId = this.skillId
     this.invocationRequest.context.System.application.applicationId = this.skillId
     this.invocationRequest.request.locale = this.locale

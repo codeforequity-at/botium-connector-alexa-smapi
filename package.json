@@ -55,7 +55,6 @@
     "simple-oauth2": "^5.1.0",
     "slug": "^11.0.1",
     "undici": "^7.29.0",
-    "uuid": "^7.0.0",
     "yargs": "^17.7.2"
   },
   "overrides": {
