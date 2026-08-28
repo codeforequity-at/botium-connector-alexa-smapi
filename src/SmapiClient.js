@@ -1,5 +1,4 @@
 const { AuthorizationCode } = require('simple-oauth2')
-const axios = require('axios').default
 const debug = require('debug')('botium-connector-alexa-smapi-client')
 const { Capabilities, LWA, SMAPI } = require('./constants')
 
@@ -48,22 +47,24 @@ class SmapiClient {
   }
 
   async _request (method, api, queryParams, body) {
-    const url = `${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`
-    try {
-      const response = await axios({
-        method,
-        url,
-        params: queryParams || {},
-        headers: {
-          Authorization: this.accessToken
-        },
-        data: body
+    const url = new URL(`${this.caps[Capabilities.ALEXA_SMAPI_BASE_URL]}/${SMAPI.API_VERSION}/${api}`)
+    if (queryParams) {
+      Object.keys(queryParams).forEach(key => {
+        url.searchParams.append(key, queryParams[key])
       })
-      return response.data
-    } catch (err) {
-      const status = err.response && err.response.status
-      throw new Error(status ? `HTTP error! status: ${status}` : err.message)
     }
+    const response = await fetch(url.toString(), {
+      method,
+      headers: {
+        Authorization: this.accessToken,
+        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {})
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    return response.json()
   }
 
   async get (api, queryParams) {

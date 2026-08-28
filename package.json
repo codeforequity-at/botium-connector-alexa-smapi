@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-alexa-smapi",
-  "version": "0.0.16",
+  "version": "0.0.15",
   "description": "Botium Connector for Amazon Alexa Skills API",
   "main": "dist/botium-connector-alexa-smapi-cjs.js",
   "module": "dist/botium-connector-alexa-smapi-es.js",
@@ -47,7 +47,6 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.8.4",
-    "axios": "^1.20.0",
     "cheerio": "^1.2.0",
     "debug": "^4.4.3",
     "lodash": "^4.17.23",
@@ -55,8 +54,12 @@
     "readline-sync": "^1.4.10",
     "simple-oauth2": "^5.1.0",
     "slug": "^11.0.1",
+    "undici": "^7.29.0",
     "uuid": "^7.0.0",
     "yargs": "^17.7.2"
+  },
+  "overrides": {
+    "undici": "^7.29.0"
   },
   "peerDependencies": {
     "botium-core": "^1.4.15"
